@@ -33,7 +33,7 @@ let intervalo = null;
 let estudando = false;
 let rankingAtual = [];
 let semanaAtual = '';
-let tempoEnviadoFirebase = 0; // ✅ Controla quanto já foi enviado
+let tempoEnviadoFirebase = 0;
 
 // =====================================
 // INICIALIZAÇÃO
@@ -279,14 +279,14 @@ function mostrarPagina(pagina) {
 }
 
 // =====================================
-// CRONÔMETRO - CORRIGIDO ✅
+// CRONÔMETRO
 // =====================================
 
 function iniciar() {
     if (!usuarioAtual || estudando) return;
 
     estudando = true;
-    tempoEnviadoFirebase = 0; // ✅ Reseta
+    tempoEnviadoFirebase = 0;
     document.getElementById("statusTimer").innerText = "Estudando agora...";
     document.getElementById("startButton").innerText = "● Estudando";
 
@@ -294,7 +294,6 @@ function iniciar() {
         segundosSessao++;
         atualizarTimer();
 
-        // ✅ Envia APENAS 1 segundo por vez (a cada 5 segundos, envia 5)
         const diff = segundosSessao - tempoEnviadoFirebase;
         if (diff >= 5) {
             await atualizarTempoFirebase(diff);
@@ -321,7 +320,6 @@ async function encerrar() {
     intervalo = null;
 
     if (segundosSessao > 0) {
-        // ✅ Envia o que falta
         const diff = segundosSessao - tempoEnviadoFirebase;
         if (diff > 0) {
             await atualizarTempoFirebase(diff);
@@ -367,13 +365,11 @@ function formatar(numero) {
 }
 
 // =====================================
-// FIREBASE - ATUALIZAR TEMPO (CORRIGIDO) ✅
+// FIREBASE - ATUALIZAR TEMPO
 // =====================================
 
 async function atualizarTempoFirebase(tempoAdicional) {
     if (!usuarioAtual || tempoAdicional <= 0) return;
-
-    console.log(`Enviando ${tempoAdicional} segundos para o Firebase`);
 
     try {
         const docRef = db.collection("ranking").doc(usuarioAtual.uid);
@@ -382,14 +378,12 @@ async function atualizarTempoFirebase(tempoAdicional) {
         if (doc.exists) {
             const data = doc.data();
             if (data.semana !== semanaAtual) {
-                // Nova semana: reseta
                 await docRef.update({
                     tempo: tempoAdicional,
                     semana: semanaAtual,
                     ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
                 });
             } else {
-                // ✅ Adiciona APENAS os segundos novos
                 await docRef.update({
                     tempo: firebase.firestore.FieldValue.increment(tempoAdicional),
                     ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
@@ -410,16 +404,16 @@ async function atualizarTempoFirebase(tempoAdicional) {
 }
 
 // =====================================
-// FIREBASE - CARREGAR RANKING
+// FIREBASE - CARREGAR RANKING (SEM ÍNDICE!)
 // =====================================
 
 async function carregarRanking() {
     try {
+        // ✅ SEM orderBy - não precisa de índice!
         const snapshot = await db.collection("ranking")
             .where("semana", "==", semanaAtual)
-            .orderBy("tempo", "desc")
             .get();
-
+        
         rankingAtual = [];
         snapshot.forEach(doc => {
             rankingAtual.push({
@@ -427,28 +421,20 @@ async function carregarRanking() {
                 ...doc.data()
             });
         });
-
+        
+        // Ordena MANUALMENTE (não precisa de índice)
+        rankingAtual.sort((a, b) => b.tempo - a.tempo);
         atualizarRanking();
 
     } catch (error) {
         console.error("Erro ao carregar ranking:", error);
-        try {
-            const snapshot = await db.collection("ranking")
-                .where("semana", "==", semanaAtual)
-                .get();
-            
-            rankingAtual = [];
-            snapshot.forEach(doc => {
-                rankingAtual.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-            rankingAtual.sort((a, b) => b.tempo - a.tempo);
-            atualizarRanking();
-        } catch (e2) {
-            console.error("Erro no fallback do ranking:", e2);
-        }
+        document.getElementById("listaRanking").innerHTML = `
+            <div class="ranking-row">
+                <div class="ranking-position">❌</div>
+                <div class="ranking-name">Erro ao carregar ranking</div>
+                <div class="ranking-time">-</div>
+            </div>
+        `;
     }
 }
 
@@ -537,17 +523,19 @@ function atualizarPosicao() {
 }
 
 // =====================================
-// FIREBASE - CARREGAR HISTÓRICO
+// FIREBASE - CARREGAR HISTÓRICO (SEM ÍNDICE!)
 // =====================================
 
 async function carregarHistorico() {
-    if (!usuarioAtual) return;
+    if (!usuarioAtual) {
+        console.log("❌ Usuário não logado");
+        return;
+    }
 
     try {
+        // ✅ SEM orderBy - não precisa de índice!
         const snapshot = await db.collection("historico")
             .where("uid", "==", usuarioAtual.uid)
-            .orderBy("timestamp", "desc")
-            .limit(100)
             .get();
 
         const historico = [];
@@ -558,10 +546,26 @@ async function carregarHistorico() {
             });
         });
 
-        atualizarHistorico(historico);
+        // Ordena MANUALMENTE (não precisa de índice)
+        historico.sort((a, b) => {
+            if (a.timestamp && b.timestamp) {
+                return b.timestamp - a.timestamp;
+            }
+            return 0;
+        });
+
+        const historicoLimitado = historico.slice(0, 50);
+        atualizarHistorico(historicoLimitado);
 
     } catch (error) {
-        console.error("Erro ao carregar histórico:", error);
+        console.error("❌ Erro ao carregar histórico:", error);
+        document.getElementById("listaHistorico").innerHTML = `
+            <div class="history-row">
+                <span class="history-date" style="color: #ff7676;">
+                    ❌ Erro ao carregar histórico
+                </span>
+            </div>
+        `;
     }
 }
 
@@ -575,21 +579,30 @@ function atualizarHistorico(historico) {
 
     lista.innerHTML = "";
 
-    if (historico.length === 0) {
+    if (!historico || historico.length === 0) {
         lista.innerHTML = `
             <div class="history-row">
-                <span class="history-date">Nenhuma sessão registrada.</span>
+                <span class="history-date">📭 Nenhuma sessão registrada.</span>
             </div>
         `;
         return;
     }
 
-    historico.forEach(sessao => {
+    historico.forEach((sessao, index) => {
         const div = document.createElement("div");
         div.className = "history-row";
+        
+        if (index === 0) {
+            div.style.background = "#292929";
+            div.style.borderLeft = "3px solid #4CAF50";
+        }
+
+        const data = sessao.data || 'Data não disponível';
+        const tempo = sessao.tempo || 0;
+
         div.innerHTML = `
-            <span class="history-date">${sessao.data || 'Data não disponível'}</span>
-            <span class="history-time">${formatarTempoCompleto(sessao.tempo || 0)}</span>
+            <span class="history-date">${data}</span>
+            <span class="history-time">${formatarTempoCompleto(tempo)}</span>
         `;
         lista.appendChild(div);
     });
@@ -616,6 +629,7 @@ async function carregarTempoHoje() {
 
     try {
         const hoje = new Date().toLocaleDateString("pt-BR");
+        // ✅ SEM orderBy - não precisa de índice!
         const snapshot = await db.collection("historico")
             .where("uid", "==", usuarioAtual.uid)
             .where("data", "==", hoje)
@@ -659,3 +673,6 @@ setInterval(() => {
         carregarRanking();
     }
 }, 30000);
+
+console.log("✅ StudyRank inicializado com sucesso!");
+console.log("📊 Semana atual:", obterSemanaAtual());
