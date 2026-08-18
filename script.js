@@ -1,6 +1,6 @@
 /* =====================================
-   STUDYRANK - VERSÃO FIREBASE
-   Ranking compartilhado em tempo real!
+   MYSTUDY - Versão Firebase
+   Seu cronômetro pessoal de estudos!
 ===================================== */
 
 // =====================================
@@ -27,12 +27,9 @@ const db = firebase.firestore();
 // =====================================
 
 let usuarioAtual = null;
-let usuarioData = null;
 let segundosSessao = 0;
 let intervalo = null;
 let estudando = false;
-let rankingAtual = [];
-let semanaAtual = '';
 let tempoEnviadoFirebase = 0;
 
 // =====================================
@@ -50,80 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
-
-// =====================================
-// TELAS DE AUTENTICAÇÃO
-// =====================================
-
-function mostrarCadastro() {
-    document.getElementById("loginForm").classList.add("hidden");
-    document.getElementById("cadastroForm").classList.remove("hidden");
-    document.getElementById("loginMensagem").innerText = "";
-}
-
-function mostrarLogin() {
-    document.getElementById("cadastroForm").classList.add("hidden");
-    document.getElementById("loginForm").classList.remove("hidden");
-    document.getElementById("cadastroMensagem").innerText = "";
-}
-
-// =====================================
-// CADASTRO
-// =====================================
-
-async function cadastrar() {
-    const nome = document.getElementById("cadNome").value.trim();
-    const email = document.getElementById("cadEmail").value.trim();
-    const senha = document.getElementById("cadSenha").value;
-    const mensagem = document.getElementById("cadastroMensagem");
-
-    if (!nome || !email || !senha) {
-        mensagem.innerText = "Preencha todos os campos.";
-        mensagem.style.color = "#ff7676";
-        return;
-    }
-
-    if (senha.length < 6) {
-        mensagem.innerText = "A senha precisa ter pelo menos 6 caracteres.";
-        mensagem.style.color = "#ff7676";
-        return;
-    }
-
-    try {
-        mensagem.innerText = "Criando conta...";
-        mensagem.style.color = "#7ee787";
-
-        const userCredential = await auth.createUserWithEmailAndPassword(email, senha);
-        const user = userCredential.user;
-
-        await db.collection("usuarios").doc(user.uid).set({
-            uid: user.uid,
-            nome: nome,
-            email: email,
-            criadoEm: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        await db.collection("ranking").doc(user.uid).set({
-            uid: user.uid,
-            nome: nome,
-            tempo: 0,
-            semana: obterSemanaAtual()
-        });
-
-        mensagem.innerText = "Cadastro realizado com sucesso!";
-        mensagem.style.color = "#7ee787";
-
-        setTimeout(() => {
-            mostrarLogin();
-            document.getElementById("loginEmail").value = email;
-        }, 1500);
-
-    } catch (error) {
-        console.error("Erro no cadastro:", error);
-        mensagem.innerText = error.message;
-        mensagem.style.color = "#ff7676";
-    }
-}
 
 // =====================================
 // LOGIN
@@ -164,27 +87,27 @@ async function carregarDadosUsuario(user) {
     try {
         const doc = await db.collection("usuarios").doc(user.uid).get();
         if (doc.exists) {
-            usuarioData = doc.data();
             usuarioAtual = {
                 uid: user.uid,
-                ...usuarioData
+                ...doc.data()
             };
         } else {
+            const nome = user.displayName || user.email.split('@')[0];
             await db.collection("usuarios").doc(user.uid).set({
                 uid: user.uid,
-                nome: user.displayName || user.email.split('@')[0],
+                nome: nome,
                 email: user.email,
                 criadoEm: firebase.firestore.FieldValue.serverTimestamp()
             });
             usuarioAtual = {
                 uid: user.uid,
-                nome: user.displayName || user.email.split('@')[0],
+                nome: nome,
                 email: user.email
             };
         }
 
-        semanaAtual = obterSemanaAtual();
-        await carregarRanking();
+        await carregarHistorico();
+        await carregarTempoTotal();
 
     } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -203,7 +126,7 @@ function abrirAplicativo() {
     document.getElementById("menuUsuario").innerText = usuarioAtual.nome;
     document.getElementById("nomeWelcome").innerText = usuarioAtual.nome;
 
-    atualizarInterface();
+    carregarTempoHoje();
 }
 
 // =====================================
@@ -219,19 +142,16 @@ async function logout() {
     try {
         await auth.signOut();
         usuarioAtual = null;
-        usuarioData = null;
 
         if (intervalo) {
             clearInterval(intervalo);
             intervalo = null;
         }
         segundosSessao = 0;
-        tempoEnviadoFirebase = 0;
         estudando = false;
 
         document.getElementById("appScreen").classList.add("hidden");
         document.getElementById("authScreen").classList.remove("hidden");
-        mostrarLogin();
 
         document.getElementById("timer").innerText = "00:00:00";
         document.getElementById("statusTimer").innerText = "Pronto para estudar";
@@ -264,14 +184,10 @@ function mostrarPagina(pagina) {
     fecharMenu();
 
     document.getElementById("paginaCronometro").classList.add("hidden");
-    document.getElementById("paginaRanking").classList.add("hidden");
     document.getElementById("paginaHistorico").classList.add("hidden");
 
     if (pagina === "cronometro") {
         document.getElementById("paginaCronometro").classList.remove("hidden");
-    } else if (pagina === "ranking") {
-        document.getElementById("paginaRanking").classList.remove("hidden");
-        carregarRanking();
     } else if (pagina === "historico") {
         document.getElementById("paginaHistorico").classList.remove("hidden");
         carregarHistorico();
@@ -296,7 +212,6 @@ function iniciar() {
 
         const diff = segundosSessao - tempoEnviadoFirebase;
         if (diff >= 5) {
-            await atualizarTempoFirebase(diff);
             tempoEnviadoFirebase = segundosSessao;
         }
     }, 1000);
@@ -320,11 +235,6 @@ async function encerrar() {
     intervalo = null;
 
     if (segundosSessao > 0) {
-        const diff = segundosSessao - tempoEnviadoFirebase;
-        if (diff > 0) {
-            await atualizarTempoFirebase(diff);
-        }
-
         try {
             await db.collection("historico").add({
                 uid: usuarioAtual.uid,
@@ -334,8 +244,9 @@ async function encerrar() {
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            await carregarRanking();
             await carregarHistorico();
+            await carregarTempoTotal();
+            await carregarTempoHoje();
 
         } catch (error) {
             console.error("Erro ao salvar sessão:", error);
@@ -343,13 +254,11 @@ async function encerrar() {
     }
 
     segundosSessao = 0;
-    tempoEnviadoFirebase = 0;
     estudando = false;
 
     document.getElementById("statusTimer").innerText = "Sessão encerrada";
     document.getElementById("startButton").innerText = "▶ Iniciar";
     atualizarTimer();
-    atualizarInterface();
 }
 
 function atualizarTimer() {
@@ -365,175 +274,13 @@ function formatar(numero) {
 }
 
 // =====================================
-// FIREBASE - ATUALIZAR TEMPO
-// =====================================
-
-async function atualizarTempoFirebase(tempoAdicional) {
-    if (!usuarioAtual || tempoAdicional <= 0) return;
-
-    try {
-        const docRef = db.collection("ranking").doc(usuarioAtual.uid);
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            const data = doc.data();
-            if (data.semana !== semanaAtual) {
-                await docRef.update({
-                    tempo: tempoAdicional,
-                    semana: semanaAtual,
-                    ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } else {
-                await docRef.update({
-                    tempo: firebase.firestore.FieldValue.increment(tempoAdicional),
-                    ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
-        } else {
-            await docRef.set({
-                uid: usuarioAtual.uid,
-                nome: usuarioAtual.nome,
-                tempo: tempoAdicional,
-                semana: semanaAtual,
-                ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        }
-    } catch (error) {
-        console.error("Erro ao atualizar ranking:", error);
-    }
-}
-
-// =====================================
-// FIREBASE - CARREGAR RANKING (SEM ÍNDICE!)
-// =====================================
-
-async function carregarRanking() {
-    try {
-        // ✅ SEM orderBy - não precisa de índice!
-        const snapshot = await db.collection("ranking")
-            .where("semana", "==", semanaAtual)
-            .get();
-        
-        rankingAtual = [];
-        snapshot.forEach(doc => {
-            rankingAtual.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-        
-        // Ordena MANUALMENTE (não precisa de índice)
-        rankingAtual.sort((a, b) => b.tempo - a.tempo);
-        atualizarRanking();
-
-    } catch (error) {
-        console.error("Erro ao carregar ranking:", error);
-        document.getElementById("listaRanking").innerHTML = `
-            <div class="ranking-row">
-                <div class="ranking-position">❌</div>
-                <div class="ranking-name">Erro ao carregar ranking</div>
-                <div class="ranking-time">-</div>
-            </div>
-        `;
-    }
-}
-
-// =====================================
-// EXIBIR RANKING
-// =====================================
-
-function atualizarRanking() {
-    const lista = document.getElementById("listaRanking");
-    if (!lista) return;
-
-    lista.innerHTML = "";
-
-    if (rankingAtual.length === 0) {
-        lista.innerHTML = `
-            <div class="ranking-row">
-                <div class="ranking-position">-</div>
-                <div class="ranking-name">Nenhum registro esta semana</div>
-                <div class="ranking-time">0min</div>
-            </div>
-        `;
-        return;
-    }
-
-    rankingAtual.forEach((jogador, index) => {
-        const linha = document.createElement("div");
-        linha.className = "ranking-row";
-
-        if (usuarioAtual && jogador.uid === usuarioAtual.uid) {
-            linha.style.background = "#292929";
-            linha.style.borderLeft = "3px solid #4CAF50";
-        }
-
-        const nome = jogador.nome || jogador.uid || "Anônimo";
-
-        linha.innerHTML = `
-            <div class="ranking-position">${obterMedalha(index)}</div>
-            <div class="ranking-name">${escaparHTML(nome)}</div>
-            <div class="ranking-time">${formatarTempo(jogador.tempo || 0)}</div>
-        `;
-
-        lista.appendChild(linha);
-    });
-
-    atualizarPosicao();
-}
-
-function obterMedalha(posicao) {
-    if (posicao === 0) return "🥇";
-    if (posicao === 1) return "🥈";
-    if (posicao === 2) return "🥉";
-    return `${posicao + 1}º`;
-}
-
-function formatarTempo(segundos) {
-    const horas = Math.floor(segundos / 3600);
-    const minutos = Math.floor((segundos % 3600) / 60);
-
-    if (horas > 0) {
-        return `${horas}h ${String(minutos).padStart(2, "0")}min`;
-    }
-    return `${minutos}min`;
-}
-
-function formatarTempoCompleto(segundos) {
-    const h = Math.floor(segundos / 3600);
-    const m = Math.floor((segundos % 3600) / 60);
-    const s = segundos % 60;
-
-    if (h > 0) return `${h}h ${m}min ${s}s`;
-    if (m > 0) return `${m}min ${s}s`;
-    return `${s}s`;
-}
-
-function atualizarPosicao() {
-    if (!usuarioAtual) return;
-
-    const posicao = rankingAtual.findIndex(r => r.uid === usuarioAtual.uid);
-    const elemento = document.getElementById("posicaoAtual");
-
-    if (posicao === -1 || rankingAtual.length === 0) {
-        elemento.innerText = "-";
-    } else {
-        elemento.innerText = `${posicao + 1}º`;
-    }
-}
-
-// =====================================
-// FIREBASE - CARREGAR HISTÓRICO (SEM ÍNDICE!)
+// HISTÓRICO
 // =====================================
 
 async function carregarHistorico() {
-    if (!usuarioAtual) {
-        console.log("❌ Usuário não logado");
-        return;
-    }
+    if (!usuarioAtual) return;
 
     try {
-        // ✅ SEM orderBy - não precisa de índice!
         const snapshot = await db.collection("historico")
             .where("uid", "==", usuarioAtual.uid)
             .get();
@@ -546,7 +293,6 @@ async function carregarHistorico() {
             });
         });
 
-        // Ordena MANUALMENTE (não precisa de índice)
         historico.sort((a, b) => {
             if (a.timestamp && b.timestamp) {
                 return b.timestamp - a.timestamp;
@@ -554,24 +300,12 @@ async function carregarHistorico() {
             return 0;
         });
 
-        const historicoLimitado = historico.slice(0, 50);
-        atualizarHistorico(historicoLimitado);
+        atualizarHistorico(historico.slice(0, 50));
 
     } catch (error) {
-        console.error("❌ Erro ao carregar histórico:", error);
-        document.getElementById("listaHistorico").innerHTML = `
-            <div class="history-row">
-                <span class="history-date" style="color: #ff7676;">
-                    ❌ Erro ao carregar histórico
-                </span>
-            </div>
-        `;
+        console.error("Erro ao carregar histórico:", error);
     }
 }
-
-// =====================================
-// EXIBIR HISTÓRICO
-// =====================================
 
 function atualizarHistorico(historico) {
     const lista = document.getElementById("listaHistorico");
@@ -597,39 +331,33 @@ function atualizarHistorico(historico) {
             div.style.borderLeft = "3px solid #4CAF50";
         }
 
-        const data = sessao.data || 'Data não disponível';
-        const tempo = sessao.tempo || 0;
-
         div.innerHTML = `
-            <span class="history-date">${data}</span>
-            <span class="history-time">${formatarTempoCompleto(tempo)}</span>
+            <span class="history-date">${sessao.data || 'Data não disponível'}</span>
+            <span class="history-time">${formatarTempoCompleto(sessao.tempo || 0)}</span>
         `;
         lista.appendChild(div);
     });
 }
 
-// =====================================
-// INTERFACE
-// =====================================
+function formatarTempoCompleto(segundos) {
+    const h = Math.floor(segundos / 3600);
+    const m = Math.floor((segundos % 3600) / 60);
+    const s = segundos % 60;
 
-function atualizarInterface() {
-    if (!usuarioAtual) return;
-
-    const meuRanking = rankingAtual.find(r => r.uid === usuarioAtual.uid);
-    if (meuRanking) {
-        document.getElementById("tempoSemana").innerText = formatarTempo(meuRanking.tempo || 0);
-    }
-
-    carregarTempoHoje();
-    atualizarPosicao();
+    if (h > 0) return `${h}h ${m}min ${s}s`;
+    if (m > 0) return `${m}min ${s}s`;
+    return `${s}s`;
 }
+
+// =====================================
+// ESTATÍSTICAS
+// =====================================
 
 async function carregarTempoHoje() {
     if (!usuarioAtual) return;
 
     try {
         const hoje = new Date().toLocaleDateString("pt-BR");
-        // ✅ SEM orderBy - não precisa de índice!
         const snapshot = await db.collection("historico")
             .where("uid", "==", usuarioAtual.uid)
             .where("data", "==", hoje)
@@ -647,16 +375,39 @@ async function carregarTempoHoje() {
     }
 }
 
+async function carregarTempoTotal() {
+    if (!usuarioAtual) return;
+
+    try {
+        const snapshot = await db.collection("historico")
+            .where("uid", "==", usuarioAtual.uid)
+            .get();
+
+        let total = 0;
+        snapshot.forEach(doc => {
+            total += doc.data().tempo || 0;
+        });
+
+        document.getElementById("tempoTotal").innerText = formatarTempo(total);
+
+    } catch (error) {
+        console.error("Erro ao carregar tempo total:", error);
+    }
+}
+
+function formatarTempo(segundos) {
+    const horas = Math.floor(segundos / 3600);
+    const minutos = Math.floor((segundos % 3600) / 60);
+
+    if (horas > 0) {
+        return `${horas}h ${String(minutos).padStart(2, "0")}min`;
+    }
+    return `${minutos}min`;
+}
+
 // =====================================
 // UTILITÁRIOS
 // =====================================
-
-function obterSemanaAtual() {
-    const data = new Date();
-    const primeiroDia = new Date(data.getFullYear(), 0, 1);
-    const dias = Math.floor((data - primeiroDia) / 86400000);
-    return data.getFullYear() + "-" + Math.ceil((dias + primeiroDia.getDay() + 1) / 7);
-}
 
 function escaparHTML(texto) {
     const div = document.createElement("div");
@@ -664,15 +415,4 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-// =====================================
-// RECARREGAR RANKING A CADA 30 SEGUNDOS
-// =====================================
-
-setInterval(() => {
-    if (usuarioAtual) {
-        carregarRanking();
-    }
-}, 30000);
-
-console.log("✅ StudyRank inicializado com sucesso!");
-console.log("📊 Semana atual:", obterSemanaAtual());
+console.log("✅ MyStudy inicializado!");
