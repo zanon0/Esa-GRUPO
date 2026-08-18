@@ -143,14 +143,14 @@ async function logout() {
     }
 }
 // =====================================
-// PLAYER DE MÚSICA
+// PLAYER DE MÚSICA COM VOLUME
 // =====================================
 
 let currentMusicIndex = 0;
 let player = null;
 let isPlaying = false;
 
-// Playlist de músicas (adicione quantas quiser)
+// Playlist de músicas
 const playlist = [
     {
         title: "🎵 Deep Focus - Interstellar",
@@ -171,6 +171,14 @@ const playlist = [
     {
         title: "🎵 Focus & Concentration",
         videoId: "jfKfPfyJRdk"
+    },
+    {
+        title: "🎵 Study with Me",
+        videoId: "5yx6BWlEVcY"
+    },
+    {
+        title: "🎵 Chill Study Beats",
+        videoId: "rUxyKA_-grg"
     }
 ];
 
@@ -197,16 +205,25 @@ function carregarMusica(index) {
 
     if (player) {
         player.loadVideoById(musica.videoId);
+        // Aplica o volume atual
+        const volumeValue = document.getElementById('volumeSlider').value;
+        player.setVolume(parseInt(volumeValue));
     } else {
         player = new YT.Player('youtubePlayer', {
             height: '0',
             width: '0',
             videoId: musica.videoId,
+            playerVars: {
+                volume: parseInt(document.getElementById('volumeSlider').value)
+            },
             events: {
                 onReady: (event) => {
                     if (isPlaying) {
                         event.target.playVideo();
                     }
+                    // Aplica o volume inicial
+                    const volumeValue = document.getElementById('volumeSlider').value;
+                    event.target.setVolume(parseInt(volumeValue));
                 },
                 onStateChange: (event) => {
                     if (event.data === YT.PlayerState.ENDED) {
@@ -241,6 +258,58 @@ function nextMusic() {
         }, 500);
     }
 }
+
+// =====================================
+// CONTROLE DE VOLUME
+// =====================================
+
+function ajustarVolume(valor) {
+    const volume = parseInt(valor);
+    document.getElementById('volumeValue').innerText = volume + '%';
+    
+    // Muda o ícone do volume
+    const icon = document.querySelector('.volume-icon');
+    if (volume === 0) {
+        icon.innerText = '🔇';
+    } else if (volume < 30) {
+        icon.innerText = '🔈';
+    } else if (volume < 70) {
+        icon.innerText = '🔉';
+    } else {
+        icon.innerText = '🔊';
+    }
+    
+    // Aplica o volume no player
+    if (player) {
+        player.setVolume(volume);
+    }
+}
+
+// =====================================
+// VOLUME POR TECLADO
+// =====================================
+
+document.addEventListener('keydown', (event) => {
+    const slider = document.getElementById('volumeSlider');
+    
+    // Seta para cima = aumentar volume
+    if (event.key === 'ArrowUp' && event.ctrlKey) {
+        event.preventDefault();
+        let novoValor = parseInt(slider.value) + 10;
+        if (novoValor > 100) novoValor = 100;
+        slider.value = novoValor;
+        ajustarVolume(novoValor);
+    }
+    
+    // Seta para baixo = diminuir volume
+    if (event.key === 'ArrowDown' && event.ctrlKey) {
+        event.preventDefault();
+        let novoValor = parseInt(slider.value) - 10;
+        if (novoValor < 0) novoValor = 0;
+        slider.value = novoValor;
+        ajustarVolume(novoValor);
+    }
+});
 
 // Inicializa o player quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
