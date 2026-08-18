@@ -54,6 +54,9 @@
             <button class="menu-item active" onclick="mostrarPagina('cronometro')">
                 ⏱️ <span>Cronômetro</span>
             </button>
+            <button class="menu-item" onclick="mostrarPagina('ranking')">
+                🏆 <span>Ranking</span>
+            </button>
             <button class="menu-item" onclick="mostrarPagina('historico')">
                 📅 <span>Histórico</span>
             </button>
@@ -90,14 +93,36 @@
                     <strong id="tempoHoje">00:00</strong>
                 </div>
                 <div class="stat-card">
-                    <span>Total</span>
-                    <strong id="tempoTotal">00:00</strong>
+                    <span>Esta semana</span>
+                    <strong id="tempoSemana">00:00</strong>
+                </div>
+                <div class="stat-card">
+                    <span>Posição</span>
+                    <strong id="posicaoAtual">-</strong>
                 </div>
             </div>
 
             <div class="quote-card">
                 <span>💡</span>
                 <p>Não minta para você mesmo. O objetivo aqui é criar disciplina e hábito de estudar.</p>
+            </div>
+        </section>
+
+        <!-- =========================
+             PÁGINA RANKING
+        ========================== -->
+        <section id="paginaRanking" class="page hidden">
+            <div class="page-title">
+                <h2>🏆 Ranking semanal</h2>
+                <p>Quem estudou mais esta semana?</p>
+            </div>
+            <div class="ranking-card">
+                <div class="ranking-header">
+                    <span>Posição</span>
+                    <span>Estudante</span>
+                    <span>Tempo</span>
+                </div>
+                <div id="listaRanking"></div>
             </div>
         </section>
 
