@@ -506,7 +506,7 @@ button {
 }
 
 /* =========================
-   RANKING - CORRIGIDO E ALINHADO
+   RANKING
 ========================= */
 
 .page-title {
@@ -693,61 +693,6 @@ button {
 }
 
 /* =========================
-   RESPONSIVO
-========================= */
-
-@media (max-width: 600px) {
-    .auth-box {
-        padding: 25px;
-    }
-
-    .user-name {
-        max-width: 100px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 14px;
-    }
-
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .timer-card {
-        padding: 30px 15px;
-    }
-
-    .ranking-header,
-    .ranking-row {
-        grid-template-columns: 55px 1fr 85px;
-        padding: 12px 15px;
-    }
-
-    .ranking-position {
-        font-size: 16px;
-    }
-
-    .ranking-name {
-        font-size: 14px;
-    }
-
-    .timer-buttons {
-        flex-direction: column;
-    }
-
-    .timer-buttons button {
-        width: 100%;
-    }
-
-    .comparacao-grid {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .comparacao-vs {
-        padding: 5px 0;
-    }
-}
-/* =========================
    CADERNO - ESTILO ONE NOTE
 ========================= */
 
@@ -901,10 +846,61 @@ button {
 }
 
 /* =========================
-   RESPONSIVO CADERNO
+   RESPONSIVO
 ========================= */
 
 @media (max-width: 600px) {
+    .auth-box {
+        padding: 25px;
+    }
+
+    .user-name {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .timer-card {
+        padding: 30px 15px;
+    }
+
+    .ranking-header,
+    .ranking-row {
+        grid-template-columns: 55px 1fr 85px;
+        padding: 12px 15px;
+    }
+
+    .ranking-position {
+        font-size: 16px;
+    }
+
+    .ranking-name {
+        font-size: 14px;
+    }
+
+    .timer-buttons {
+        flex-direction: column;
+    }
+
+    .timer-buttons button {
+        width: 100%;
+    }
+
+    .comparacao-grid {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .comparacao-vs {
+        padding: 5px 0;
+    }
+
+    /* CADERNO RESPONSIVO */
     .caderno-tabs {
         flex-wrap: nowrap;
     }
