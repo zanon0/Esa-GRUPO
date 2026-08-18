@@ -1,5 +1,5 @@
 /* =====================================
-   MYSTUDY - Versão Firebase (CORRIGIDA)
+   MYSTUDY - Versão Final Corrigida
 ===================================== */
 
 const firebaseConfig = {
@@ -17,7 +17,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // =====================================
-// VARIÁVEIS
+// VARIÁVEIS GLOBAIS
 // =====================================
 
 let usuarioAtual = null;
@@ -29,7 +29,9 @@ let semanaAtual = '';
 let tempoEnviadoFirebase = 0;
 let semanaAnteriorTotal = 0;
 let semanaAtualTotal = 0;
-let unsubscribeRanking = null; // para listener em tempo real
+let unsubscribeRanking = null;
+let materiaAtual = '';
+let graficoMaterias = null;
 
 // =====================================
 // INICIALIZAÇÃO
@@ -50,15 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Verifica a cada 5 minutos se a semana mudou (fallback)
+    // Verifica mudança de semana a cada 5 minutos
     setInterval(verificarMudancaSemana, 300000);
-
-    // Salvar anotação ao sair da página
-    window.addEventListener('beforeunload', (e) => {
-        if (abaAtualId && usuarioAtual) {
-            salvarAnotacao(); // tenta salvar imediatamente
-        }
-    });
 });
 
 // =====================================
@@ -114,7 +109,6 @@ async function carregarDadosUsuario(user) {
                 email: user.email,
                 criadoEm: firebase.firestore.FieldValue.serverTimestamp()
             });
-            // Cria documento no ranking com semana atual
             await db.collection("ranking").doc(user.uid).set({
                 uid: user.uid,
                 nome: nome,
@@ -125,15 +119,9 @@ async function carregarDadosUsuario(user) {
             usuarioAtual = { uid: user.uid, nome: nome, email: user.email };
         }
 
-        semanaAtual = obterSemanaAtual(); // atualiza a semana atual
-
-        // Verifica se a semana do ranking é diferente (reset automático)
+        semanaAtual = obterSemanaAtual();
         await verificarMudancaSemana();
-
-        // Configura listener em tempo real para o ranking
         configurarListenerRanking();
-
-        await carregarHistorico();
         await carregarTempoHoje();
         await carregarComparacaoSemanal();
 
@@ -210,42 +198,71 @@ function mostrarPagina(pagina) {
     document.getElementById("paginaCronometro").classList.add("hidden");
     document.getElementById("paginaRanking").classList.add("hidden");
     document.getElementById("paginaHistorico").classList.add("hidden");
-    document.getElementById("paginaCaderno").classList.add("hidden");
+    document.getElementById("paginaEstatisticas").classList.add("hidden");
 
     if (pagina === "cronometro") {
         document.getElementById("paginaCronometro").classList.remove("hidden");
         carregarComparacaoSemanal();
     } else if (pagina === "ranking") {
         document.getElementById("paginaRanking").classList.remove("hidden");
-        // O listener já está ativo, apenas atualiza a interface
         atualizarRanking();
     } else if (pagina === "historico") {
         document.getElementById("paginaHistorico").classList.remove("hidden");
+        definirDataPadrao();
         carregarHistorico();
-    } else if (pagina === "caderno") {
-        document.getElementById("paginaCaderno").classList.remove("hidden");
-        carregarAbas();
+    } else if (pagina === "estatisticas") {
+        document.getElementById("paginaEstatisticas").classList.remove("hidden");
+        carregarEstatisticas();
     }
 }
 
 // =====================================
-// CRONÔMETRO
+// MODAL DE MATÉRIA
 // =====================================
 
 function iniciar() {
     if (!usuarioAtual) {
-        console.log("❌ Faça login primeiro!");
+        alert("Faça login primeiro!");
         return;
     }
     
     if (estudando) {
-        console.log("⏳ Já está estudando!");
         return;
     }
 
+    // Abre o modal para digitar a matéria
+    document.getElementById("modalMateria").classList.remove("hidden");
+    document.getElementById("materiaInput").value = "";
+    document.getElementById("modalMensagem").innerText = "";
+    document.getElementById("materiaInput").focus();
+}
+
+function cancelarInicio() {
+    document.getElementById("modalMateria").classList.add("hidden");
+    materiaAtual = '';
+    document.getElementById("statusTimer").innerText = "✅ Pronto para estudar";
+    document.getElementById("startButton").innerText = "▶ Iniciar";
+}
+
+function confirmarInicio() {
+    const materia = document.getElementById("materiaInput").value.trim();
+    if (!materia) {
+        document.getElementById("modalMensagem").innerText = "Digite o nome da matéria!";
+        document.getElementById("modalMensagem").style.color = "#ff7676";
+        return;
+    }
+
+    materiaAtual = materia;
+    document.getElementById("modalMateria").classList.add("hidden");
+    
+    // Exibe a matéria atual
+    document.getElementById("materiaAtualTexto").innerText = materiaAtual;
+    document.getElementById("materiaAtualDisplay").classList.remove("hidden");
+    
+    // Inicia o cronômetro
     tempoEnviadoFirebase = 0;
     estudando = true;
-    document.getElementById("statusTimer").innerText = "🎯 Estudando agora...";
+    document.getElementById("statusTimer").innerText = "🎯 Estudando " + materiaAtual + "...";
     document.getElementById("startButton").innerText = "● Estudando";
     document.getElementById("startButton").style.background = "#4CAF50";
 
@@ -268,7 +285,6 @@ function iniciar() {
 
 function pausar() {
     if (!estudando) {
-        console.log("⏸️ Não há estudo para pausar");
         return;
     }
 
@@ -285,7 +301,6 @@ function pausar() {
 
 async function encerrar() {
     if (!usuarioAtual) {
-        console.log("❌ Usuário não logado");
         return;
     }
 
@@ -301,16 +316,23 @@ async function encerrar() {
         }
 
         try {
+            // Salva no histórico com os novos campos
+            const agora = new Date();
             await db.collection("historico").add({
                 uid: usuarioAtual.uid,
                 nome: usuarioAtual.nome,
+                materia: materiaAtual,
                 tempo: segundosSessao,
-                data: new Date().toLocaleDateString("pt-BR"),
+                data: agora.toLocaleDateString("pt-BR"),
+                dataISO: agora.toISOString().split('T')[0],
+                horaInicio: agora.toLocaleTimeString("pt-BR"),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            console.log("✅ Sessão salva:", segundosSessao, "segundos");
-            await carregarHistorico();
+            console.log("✅ Sessão salva:", segundosSessao, "segundos -", materiaAtual);
+            
+            // Atualiza as estatísticas
+            await carregarEstatisticas();
             await carregarTempoHoje();
             await carregarComparacaoSemanal();
 
@@ -322,14 +344,14 @@ async function encerrar() {
     segundosSessao = 0;
     tempoEnviadoFirebase = 0;
     estudando = false;
+    materiaAtual = '';
 
     document.getElementById("statusTimer").innerText = "✅ Pronto para estudar";
     document.getElementById("startButton").innerText = "▶ Iniciar";
     document.getElementById("startButton").style.background = "#4CAF50";
+    document.getElementById("materiaAtualDisplay").classList.add("hidden");
     atualizarTimer();
     atualizarInterface();
-
-    console.log("🛑 Sessão encerrada!");
 }
 
 function atualizarTimer() {
@@ -339,10 +361,12 @@ function atualizarTimer() {
     document.getElementById("timer").innerText = `${formatar(h)}:${formatar(m)}:${formatar(s)}`;
 }
 
-function formatar(numero) { return String(numero).padStart(2, "0"); }
+function formatar(numero) { 
+    return String(numero).padStart(2, "0"); 
+}
 
 // =====================================
-// ATUALIZAR TEMPO NO FIREBASE (com reset semanal automático)
+// ATUALIZAR TEMPO NO FIREBASE
 // =====================================
 
 async function atualizarTempoFirebase(tempoAdicional) {
@@ -350,26 +374,23 @@ async function atualizarTempoFirebase(tempoAdicional) {
     try {
         const docRef = db.collection("ranking").doc(usuarioAtual.uid);
         const doc = await docRef.get();
-        const semanaAtual = obterSemanaAtual(); // sempre calcula a semana atual
+        const semanaAtual = obterSemanaAtual();
 
         if (doc.exists) {
             const data = doc.data();
             if (data.semana !== semanaAtual) {
-                // Nova semana: zera o tempo e atualiza a semana
                 await docRef.update({
                     tempo: tempoAdicional,
                     semana: semanaAtual,
                     ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
                 });
             } else {
-                // Mesma semana: incrementa
                 await docRef.update({
                     tempo: firebase.firestore.FieldValue.increment(tempoAdicional),
                     ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
                 });
             }
         } else {
-            // Documento não existe, cria
             await docRef.set({
                 uid: usuarioAtual.uid,
                 nome: usuarioAtual.nome,
@@ -384,7 +405,7 @@ async function atualizarTempoFirebase(tempoAdicional) {
 }
 
 // =====================================
-// VERIFICA MUDANÇA DE SEMANA (reset automático)
+// VERIFICA MUDANÇA DE SEMANA
 // =====================================
 
 async function verificarMudancaSemana() {
@@ -396,14 +417,12 @@ async function verificarMudancaSemana() {
         if (doc.exists) {
             const data = doc.data();
             if (data.semana !== semanaAtual) {
-                // A semana mudou: zera o tempo
                 await docRef.update({
                     tempo: 0,
                     semana: semanaAtual,
                     ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 console.log("🔄 Ranking zerado para nova semana:", semanaAtual);
-                // Recarrega dados após reset
                 await carregarComparacaoSemanal();
             }
         }
@@ -413,7 +432,7 @@ async function verificarMudancaSemana() {
 }
 
 // =====================================
-// LISTENER EM TEMPO REAL DO RANKING
+// LISTENER RANKING EM TEMPO REAL
 // =====================================
 
 function configurarListenerRanking() {
@@ -435,7 +454,7 @@ function configurarListenerRanking() {
 }
 
 // =====================================
-// RANKING (interface)
+// RANKING
 // =====================================
 
 function atualizarRanking() {
@@ -459,13 +478,9 @@ function atualizarRanking() {
         const linha = document.createElement("div");
         linha.className = "ranking-row";
 
-        if (index === 0) {
-            linha.classList.add("posicao-1");
-        } else if (index === 1) {
-            linha.classList.add("posicao-2");
-        } else if (index === 2) {
-            linha.classList.add("posicao-3");
-        }
+        if (index === 0) linha.classList.add("posicao-1");
+        else if (index === 1) linha.classList.add("posicao-2");
+        else if (index === 2) linha.classList.add("posicao-3");
 
         if (usuarioAtual && jogador.uid === usuarioAtual.uid) {
             linha.classList.add("destaque");
@@ -522,42 +537,323 @@ function atualizarPosicao() {
 }
 
 // =====================================
-// HISTÓRICO
+// HISTÓRICO COM SELETOR DE DATA
 // =====================================
 
-async function carregarHistorico() {
-    if (!usuarioAtual) return;
-    try {
-        const snapshot = await db.collection("historico")
-            .where("uid", "==", usuarioAtual.uid)
-            .orderBy("timestamp", "desc")
-            .limit(50)
-            .get();
-        const historico = [];
-        snapshot.forEach(doc => { historico.push({ id: doc.id, ...doc.data() }); });
-        atualizarHistorico(historico);
-    } catch (error) {
-        console.error("Erro ao carregar histórico:", error);
+function definirDataPadrao() {
+    const hoje = new Date().toISOString().split('T')[0];
+    const inputData = document.getElementById("historyDate");
+    if (!inputData.value) {
+        inputData.value = hoje;
     }
 }
 
-function atualizarHistorico(historico) {
-    const lista = document.getElementById("listaHistorico");
-    if (!lista) return;
-    lista.innerHTML = "";
-    if (!historico || historico.length === 0) {
-        lista.innerHTML = `<div class="history-row"><span class="history-date">📭 Nenhuma sessão registrada.</span></div>`;
+async function carregarHistorico() {
+    if (!usuarioAtual) return;
+    
+    const dataSelecionada = document.getElementById("historyDate").value;
+    if (!dataSelecionada) {
+        document.getElementById("listaHistorico").innerHTML = 
+            `<div class="history-row"><span class="history-date">📅 Selecione uma data para visualizar o histórico.</span></div>`;
         return;
     }
-    historico.forEach((sessao, index) => {
+
+    try {
+        const snapshot = await db.collection("historico")
+            .where("uid", "==", usuarioAtual.uid)
+            .where("dataISO", "==", dataSelecionada)
+            .get();
+
+        const historico = [];
+        snapshot.forEach(doc => {
+            historico.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Ordena por hora de início
+        historico.sort((a, b) => {
+            const horaA = a.horaInicio || '';
+            const horaB = b.horaInicio || '';
+            return horaA.localeCompare(horaB);
+        });
+
+        atualizarHistorico(historico, dataSelecionada);
+    } catch (error) {
+        console.error("Erro ao carregar histórico:", error);
+        document.getElementById("listaHistorico").innerHTML = 
+            `<div class="history-row"><span class="history-date">❌ Erro ao carregar histórico.</span></div>`;
+    }
+}
+
+function atualizarHistorico(historico, dataSelecionada) {
+    const lista = document.getElementById("listaHistorico");
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    if (!historico || historico.length === 0) {
+        const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
+        lista.innerHTML = `
+            <div class="history-row">
+                <span class="history-date">📭 Nenhuma sessão registrada em ${dataFormatada}.</span>
+            </div>
+        `;
+        return;
+    }
+
+    // Calcula total do dia
+    let totalDia = 0;
+    historico.forEach(sessao => {
+        totalDia += sessao.tempo || 0;
+    });
+
+    // Cabeçalho com total
+    const headerRow = document.createElement("div");
+    headerRow.className = "history-row";
+    headerRow.style.background = "#292929";
+    headerRow.style.borderLeft = "3px solid #4CAF50";
+    headerRow.innerHTML = `
+        <div class="history-info">
+            <span class="history-date">📊 Total do dia: ${historico.length} sessão(ões)</span>
+        </div>
+        <span class="history-time">${formatarTempoCompleto(totalDia)}</span>
+    `;
+    lista.appendChild(headerRow);
+
+    historico.forEach((sessao) => {
         const div = document.createElement("div");
         div.className = "history-row";
-        if (index === 0) { div.style.background = "#292929"; div.style.borderLeft = "3px solid #4CAF50"; }
         div.innerHTML = `
-            <span class="history-date">${sessao.data || 'Data não disponível'}</span>
+            <div class="history-info">
+                <span class="history-materia">📚 ${escaparHTML(sessao.materia || 'Sem matéria')}</span>
+                <span class="history-date">🕐 ${sessao.horaInicio || 'Horário não disponível'}</span>
+            </div>
             <span class="history-time">${formatarTempoCompleto(sessao.tempo || 0)}</span>
         `;
         lista.appendChild(div);
+    });
+}
+
+// =====================================
+// ESTATÍSTICAS
+// =====================================
+
+async function carregarEstatisticas() {
+    if (!usuarioAtual) return;
+
+    try {
+        const snapshot = await db.collection("historico")
+            .where("uid", "==", usuarioAtual.uid)
+            .get();
+
+        const sessoes = [];
+        snapshot.forEach(doc => {
+            sessoes.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Calcula estatísticas
+        const totalSegundos = sessoes.reduce((acc, s) => acc + (s.tempo || 0), 0);
+        const totalSessoes = sessoes.length;
+        
+        // Agrupa por matéria
+        const materiasMap = {};
+        sessoes.forEach(sessao => {
+            const materia = sessao.materia || 'Sem matéria';
+            if (!materiasMap[materia]) {
+                materiasMap[materia] = 0;
+            }
+            materiasMap[materia] += sessao.tempo || 0;
+        });
+
+        // Encontra matéria mais estudada
+        let materiaFavorita = '-';
+        let maxTempo = 0;
+        Object.entries(materiasMap).forEach(([materia, tempo]) => {
+            if (tempo > maxTempo) {
+                maxTempo = tempo;
+                materiaFavorita = materia;
+            }
+        });
+
+        // Atualiza interface
+        document.getElementById("statTotalHoras").innerText = formatarHoras(totalSegundos);
+        document.getElementById("statTotalSessoes").innerText = totalSessoes;
+        document.getElementById("statMateriaFavorita").innerText = materiaFavorita;
+
+        // Atualiza lista de tempo por matéria
+        atualizarListaMaterias(materiasMap);
+
+        // Atualiza gráfico
+        atualizarGraficoMaterias(materiasMap);
+
+    } catch (error) {
+        console.error("Erro ao carregar estatísticas:", error);
+    }
+}
+
+function formatarHoras(segundos) {
+    const horas = Math.floor(segundos / 3600);
+    const minutos = Math.floor((segundos % 3600) / 60);
+    if (horas > 0) {
+        return `${horas}h ${minutos}min`;
+    }
+    return `${minutos}min`;
+}
+
+function atualizarListaMaterias(materiasMap) {
+    const lista = document.getElementById("listaTempoPorMateria");
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    // Ordena por tempo (decrescente)
+    const materiasOrdenadas = Object.entries(materiasMap).sort((a, b) => b[1] - a[1]);
+
+    if (materiasOrdenadas.length === 0) {
+        lista.innerHTML = `
+            <div class="materia-stat-row">
+                <span class="materia-stat-nome">Nenhuma matéria estudada ainda</span>
+                <span class="materia-stat-tempo">0min</span>
+            </div>
+        `;
+        return;
+    }
+
+    materiasOrdenadas.forEach(([materia, tempo]) => {
+        const div = document.createElement("div");
+        div.className = "materia-stat-row";
+        div.innerHTML = `
+            <span class="materia-stat-nome">📚 ${escaparHTML(materia)}</span>
+            <span class="materia-stat-tempo">${formatarTempo(tempo)}</span>
+        `;
+        lista.appendChild(div);
+    });
+}
+
+function atualizarGraficoMaterias(materiasMap) {
+    const canvas = document.getElementById("graficoMaterias");
+    if (!canvas) return;
+
+    // Destroi gráfico anterior se existir
+    if (graficoMaterias) {
+        graficoMaterias.destroy();
+    }
+
+    const materias = Object.keys(materiasMap);
+    const temposHoras = Object.values(materiasMap).map(segundos => (segundos / 3600).toFixed(2));
+
+    if (materias.length === 0) {
+        // Cria gráfico vazio
+        graficoMaterias = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: ['Nenhuma matéria'],
+                datasets: [{
+                    label: 'Horas estudadas',
+                    data: [0],
+                    backgroundColor: '#4CAF50',
+                    borderColor: '#45a049',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#888'
+                        },
+                        grid: {
+                            color: '#2a2a2a'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Horas',
+                            color: '#888'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#888'
+                        },
+                        grid: {
+                            color: '#2a2a2a'
+                        }
+                    }
+                }
+            }
+        });
+        return;
+    }
+
+    graficoMaterias = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: materias,
+            datasets: [{
+                label: 'Horas estudadas',
+                data: temposHoras,
+                backgroundColor: [
+                    '#4CAF50', '#2196F3', '#FF9800', '#9C27B0', 
+                    '#F44336', '#00BCD4', '#FFEB3B', '#795548'
+                ],
+                borderColor: '#ffffff',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#ffffff'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' horas';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#888',
+                        callback: function(value) {
+                            return value + 'h';
+                        }
+                    },
+                    grid: {
+                        color: '#2a2a2a'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Horas',
+                        color: '#888'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#888'
+                    },
+                    grid: {
+                        color: '#2a2a2a'
+                    }
+                }
+            }
+        }
     });
 }
 
@@ -629,7 +925,7 @@ async function carregarComparacaoSemanal() {
 }
 
 // =====================================
-// ESTATÍSTICAS
+// ESTATÍSTICAS RÁPIDAS (HOJE)
 // =====================================
 
 async function carregarTempoHoje() {
@@ -664,8 +960,8 @@ function atualizarInterface() {
 function obterSemanaAtual() {
     const data = new Date();
     const alvo = new Date(Date.UTC(data.getFullYear(), data.getMonth(), data.getDate()));
-    const diaNum = alvo.getUTCDay() || 7; // domingo = 7
-    alvo.setUTCDate(alvo.getUTCDate() + 4 - diaNum); // quinta-feira da semana atual
+    const diaNum = alvo.getUTCDay() || 7;
+    alvo.setUTCDate(alvo.getUTCDate() + 4 - diaNum);
     const anoInicio = new Date(Date.UTC(alvo.getUTCFullYear(), 0, 1));
     const semana = Math.ceil((((alvo - anoInicio) / 86400000) + 1) / 7);
     return `${alvo.getUTCFullYear()}-${String(semana).padStart(2, '0')}`;
@@ -688,296 +984,6 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-// =====================================
-// CADERNO DE ANOTAÇÕES
-// =====================================
-
-let abasAtuais = [];
-let abaAtualId = null;
-let salvandoTimeout = null;
-
-async function carregarAbas() {
-    if (!usuarioAtual) {
-        console.log("❌ Usuário não logado");
-        return;
-    }
-
-    try {
-        const snapshot = await db.collection("caderno")
-            .where("uid", "==", usuarioAtual.uid)
-            .get();
-
-        abasAtuais = [];
-        snapshot.forEach(doc => {
-            abasAtuais.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-
-        console.log("📓 Abas carregadas:", abasAtuais.length);
-
-        abasAtuais.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-
-        if (abasAtuais.length === 0) {
-            await criarAbaPadrao();
-        } else {
-            renderizarAbas();
-            const primeiraAba = abasAtuais[0];
-            abaAtualId = primeiraAba.id;
-            carregarAba(primeiraAba.id);
-        }
-
-    } catch (error) {
-        console.error("❌ Erro ao carregar abas:", error);
-        if (usuarioAtual) {
-            await criarAbaPadrao();
-        }
-    }
-}
-
-async function criarAbaPadrao() {
-    if (!usuarioAtual) return;
-    
-    try {
-        console.log("📝 Criando aba padrão...");
-        
-        const novaAba = {
-            uid: usuarioAtual.uid,
-            titulo: "Minhas anotações",
-            conteudo: "Comece a escrever aqui...",
-            ordem: 0,
-            criadoEm: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        const docRef = await db.collection("caderno").add(novaAba);
-        console.log("✅ Aba padrão criada:", docRef.id);
-        
-        abaAtualId = docRef.id;
-        await carregarAbas();
-
-    } catch (error) {
-        console.error("❌ Erro ao criar aba padrão:", error);
-        alert("Erro ao criar aba padrão. Verifique as regras do Firebase.");
-    }
-}
-
-function renderizarAbas() {
-    const lista = document.getElementById("listaAbas");
-    if (!lista) {
-        console.log("❌ Elemento 'listaAbas' não encontrado");
-        return;
-    }
-
-    lista.innerHTML = "";
-
-    if (abasAtuais.length === 0) {
-        lista.innerHTML = `<span style="color:#555; padding:10px;">Nenhuma aba</span>`;
-        return;
-    }
-
-    abasAtuais.forEach(aba => {
-        const tab = document.createElement("button");
-        tab.className = "caderno-tab";
-        if (aba.id === abaAtualId) {
-            tab.classList.add("active");
-        }
-        tab.textContent = aba.titulo || "Sem título";
-        tab.title = "Clique para abrir";
-        tab.onclick = () => selecionarAba(aba.id);
-        lista.appendChild(tab);
-    });
-}
-
-function selecionarAba(id) {
-    if (!id) return;
-    
-    if (abaAtualId && abaAtualId !== id) {
-        salvarAnotacao();
-    }
-    
-    abaAtualId = id;
-    renderizarAbas();
-    carregarAba(id);
-}
-
-function carregarAba(id) {
-    const aba = abasAtuais.find(a => a.id === id);
-    if (!aba) {
-        console.log("❌ Aba não encontrada:", id);
-        return;
-    }
-
-    document.getElementById("cadernoTitulo").value = aba.titulo || "Sem título";
-    document.getElementById("cadernoTexto").value = aba.conteudo || "";
-    atualizarStats();
-    document.getElementById("cadernoSalvo").innerText = "💾 Carregado";
-    document.getElementById("cadernoSalvo").className = "salvo";
-}
-
-async function salvarAnotacao() {
-    if (!abaAtualId || !usuarioAtual) {
-        console.log("❌ Não é possível salvar: sem aba ou usuário");
-        return;
-    }
-
-    const titulo = document.getElementById("cadernoTitulo").value.trim() || "Sem título";
-    const conteudo = document.getElementById("cadernoTexto").value;
-
-    document.getElementById("cadernoSalvo").innerText = "⏳ Salvando...";
-    document.getElementById("cadernoSalvo").className = "salvando";
-
-    try {
-        await db.collection("caderno").doc(abaAtualId).update({
-            titulo: titulo,
-            conteudo: conteudo,
-            ultimaEdicao: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        const aba = abasAtuais.find(a => a.id === abaAtualId);
-        if (aba) {
-            aba.titulo = titulo;
-            aba.conteudo = conteudo;
-        }
-
-        console.log("✅ Anotação salva com sucesso!");
-        document.getElementById("cadernoSalvo").innerText = "💾 Salvo!";
-        document.getElementById("cadernoSalvo").className = "salvo";
-        atualizarStats();
-        renderizarAbas();
-
-    } catch (error) {
-        console.error("❌ Erro ao salvar:", error);
-        document.getElementById("cadernoSalvo").innerText = "❌ Erro ao salvar";
-        document.getElementById("cadernoSalvo").className = "";
-        
-        if (error.message.includes("not found")) {
-            alert("Documento não encontrado. Recriando...");
-            await criarNovaAba();
-        }
-    }
-}
-
-function atualizarStats() {
-    const texto = document.getElementById("cadernoTexto").value;
-    const palavras = texto.trim() ? texto.trim().split(/\s+/).length : 0;
-    const caracteres = texto.length;
-    document.getElementById("cadernoStats").innerText = `📝 ${palavras} palavras · ${caracteres} caracteres`;
-}
-
-function salvarAnotacaoDebounce() {
-    if (salvandoTimeout) {
-        clearTimeout(salvandoTimeout);
-    }
-    document.getElementById("cadernoSalvo").innerText = "⏳ Salvando...";
-    document.getElementById("cadernoSalvo").className = "salvando";
-    salvandoTimeout = setTimeout(() => {
-        salvarAnotacao();
-        salvandoTimeout = null;
-    }, 800);
-}
-
-async function criarNovaAba() {
-    if (!usuarioAtual) {
-        alert("Faça login primeiro!");
-        return;
-    }
-
-    const novaAba = {
-        uid: usuarioAtual.uid,
-        titulo: `Matéria ${abasAtuais.length + 1}`,
-        conteudo: "",
-        ordem: abasAtuais.length,
-        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    try {
-        console.log("📝 Criando nova aba...");
-        const docRef = await db.collection("caderno").add(novaAba);
-        console.log("✅ Nova aba criada:", docRef.id);
-        
-        novaAba.id = docRef.id;
-        abasAtuais.push(novaAba);
-        
-        abaAtualId = docRef.id;
-        renderizarAbas();
-        carregarAba(docRef.id);
-        
-        setTimeout(() => {
-            const tituloInput = document.getElementById("cadernoTitulo");
-            tituloInput.focus();
-            tituloInput.select();
-        }, 200);
-
-    } catch (error) {
-        console.error("❌ Erro ao criar nova aba:", error);
-        alert("Erro ao criar nova aba. Verifique as regras do Firebase.");
-    }
-}
-
-async function renomearAba(novoTitulo) {
-    if (!abaAtualId || !usuarioAtual) return;
-
-    const titulo = novoTitulo.trim() || "Sem título";
-    
-    try {
-        await db.collection("caderno").doc(abaAtualId).update({
-            titulo: titulo
-        });
-
-        const aba = abasAtuais.find(a => a.id === abaAtualId);
-        if (aba) aba.titulo = titulo;
-        renderizarAbas();
-
-    } catch (error) {
-        console.error("❌ Erro ao renomear:", error);
-    }
-}
-
-async function excluirAba() {
-    if (!abaAtualId || !usuarioAtual) return;
-    if (abasAtuais.length <= 1) {
-        alert("Você precisa ter pelo menos uma aba!");
-        return;
-    }
-
-    const aba = abasAtuais.find(a => a.id === abaAtualId);
-    if (!confirm(`Excluir a aba "${aba ? aba.titulo : 'Sem título'}"?`)) return;
-
-    try {
-        await db.collection("caderno").doc(abaAtualId).delete();
-        console.log("✅ Aba excluída:", abaAtualId);
-        
-        const index = abasAtuais.findIndex(a => a.id === abaAtualId);
-        if (index !== -1) {
-            abasAtuais.splice(index, 1);
-        }
-
-        abaAtualId = abasAtuais[0].id;
-        renderizarAbas();
-        carregarAba(abaAtualId);
-
-    } catch (error) {
-        console.error("❌ Erro ao excluir:", error);
-        alert("Erro ao excluir aba. Tente novamente.");
-    }
-}
-
-// =====================================
-// EVENTO DE DIGITAÇÃO NO CADERNO
-// =====================================
-
-document.addEventListener("DOMContentLoaded", () => {
-    const textoElement = document.getElementById("cadernoTexto");
-    if (textoElement) {
-        textoElement.addEventListener("input", () => {
-            salvarAnotacaoDebounce();
-            atualizarStats();
-        });
-    }
-});
-
-console.log("✅ MyStudy inicializado!");
-console.log("📊 Ranking semanal ativo!");
-console.log("⏰ Reset automático toda segunda-feira");
-console.log("📓 Caderno de anotações ativo!");
+console.log("✅ MyStudy inicializado com sucesso!");
+console.log("📊 Estatísticas e gráficos ativos!");
+console.log("⏰ Reset semanal automático!");
