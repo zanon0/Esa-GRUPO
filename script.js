@@ -142,6 +142,110 @@ async function logout() {
         console.error("Erro ao sair:", error);
     }
 }
+// =====================================
+// PLAYER DE MÚSICA
+// =====================================
+
+let currentMusicIndex = 0;
+let player = null;
+let isPlaying = false;
+
+// Playlist de músicas (adicione quantas quiser)
+const playlist = [
+    {
+        title: "🎵 Deep Focus - Interstellar",
+        videoId: "hUUBG_Nlwh4"
+    },
+    {
+        title: "🎵 Zen Mode - Calm Productivity",
+        videoId: "Uhmq6gmLpGQ"
+    },
+    {
+        title: "🎵 Classical Music for Study",
+        videoId: "4jO2D2w0N_E"
+    },
+    {
+        title: "🎵 Deep Work Music",
+        videoId: "lTRiuFIWV54"
+    },
+    {
+        title: "🎵 Focus & Concentration",
+        videoId: "jfKfPfyJRdk"
+    }
+];
+
+// Carrega a API do YouTube
+function carregarYouTubeAPI() {
+    if (document.querySelector('script[src*="youtube.com/iframe_api"]')) return;
+    
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+}
+
+// Função chamada quando a API do YouTube carrega
+function onYouTubeIframeAPIReady() {
+    carregarMusica(currentMusicIndex);
+}
+
+function carregarMusica(index) {
+    const musica = playlist[index];
+    if (!musica) return;
+
+    document.getElementById('musicTitle').innerText = musica.title;
+
+    if (player) {
+        player.loadVideoById(musica.videoId);
+    } else {
+        player = new YT.Player('youtubePlayer', {
+            height: '0',
+            width: '0',
+            videoId: musica.videoId,
+            events: {
+                onReady: (event) => {
+                    if (isPlaying) {
+                        event.target.playVideo();
+                    }
+                },
+                onStateChange: (event) => {
+                    if (event.data === YT.PlayerState.ENDED) {
+                        nextMusic();
+                    }
+                }
+            }
+        });
+    }
+}
+
+function togglePlayPause() {
+    if (!player) return;
+    
+    if (isPlaying) {
+        player.pauseVideo();
+        document.getElementById('playPauseBtn').innerText = '▶️';
+        isPlaying = false;
+    } else {
+        player.playVideo();
+        document.getElementById('playPauseBtn').innerText = '⏸️';
+        isPlaying = true;
+    }
+}
+
+function nextMusic() {
+    currentMusicIndex = (currentMusicIndex + 1) % playlist.length;
+    carregarMusica(currentMusicIndex);
+    if (isPlaying) {
+        setTimeout(() => {
+            if (player) player.playVideo();
+        }, 500);
+    }
+}
+
+// Inicializa o player quando a página carregar
+document.addEventListener('DOMContentLoaded', () => {
+    carregarYouTubeAPI();
+});
 
 // =====================================
 // MENU
