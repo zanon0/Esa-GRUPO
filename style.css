@@ -28,32 +28,46 @@ input {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: linear-gradient(135deg, #101010 0%, #1a1a2e 100%);
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0d1a0d 100%);
 }
 
 .auth-box {
     width: 100%;
     max-width: 420px;
-    background: #1b1b1b;
+    background: rgba(27, 27, 27, 0.95);
     border-radius: 24px;
     padding: 35px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(76, 175, 80, 0.05);
-    border: 1px solid #2a2a2a;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 60px rgba(76, 175, 80, 0.05);
+    border: 1px solid rgba(76, 175, 80, 0.1);
+    backdrop-filter: blur(10px);
 }
 
 .logo {
     font-size: 55px;
     text-align: center;
     margin-bottom: 5px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 .auth-box h1 {
     text-align: center;
     font-size: 34px;
     margin: 8px 0;
-    background: linear-gradient(135deg, #fff 0%, #4CAF50 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #4CAF50 50%, #45a049 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: gradient 3s ease-in-out infinite;
+}
+
+@keyframes gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
 .subtitle {
@@ -83,7 +97,7 @@ input {
 
 input:focus {
     border-color: #4CAF50;
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.1);
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.1);
 }
 
 button {
@@ -104,7 +118,7 @@ button {
 
 .primary-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
 }
 
 .mensagem {
@@ -128,7 +142,7 @@ button {
     align-items: center;
     padding: 0 20px;
     border-bottom: 1px solid #292929;
-    background: rgba(21, 21, 21, 0.95);
+    background: rgba(16, 16, 16, 0.95);
     backdrop-filter: blur(10px);
     position: sticky;
     top: 0;
@@ -151,7 +165,7 @@ button {
     font-size: 21px;
     font-weight: bold;
     margin-left: 10px;
-    background: linear-gradient(135deg, #fff 0%, #4CAF50 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #4CAF50 50%, #45a049 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -209,7 +223,7 @@ button {
 .menu-header strong {
     display: block;
     font-size: 18px;
-    background: linear-gradient(135deg, #fff 0%, #4CAF50 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #4CAF50 50%, #45a049 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -492,7 +506,7 @@ button {
 }
 
 /* =========================
-   RANKING
+   RANKING - VERSÃO BONITA! 
 ========================= */
 
 .page-title {
@@ -537,16 +551,53 @@ button {
 }
 
 .ranking-row:hover {
-    background: #222;
+    transform: scale(1.01);
 }
 
 .ranking-row:last-child {
     border-bottom: none;
 }
 
+/* 🥇 POSIÇÃO 1 */
+.ranking-row.posicao-1 {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, transparent 100%);
+    border-left: 3px solid #FFD700;
+}
+
+.ranking-row.posicao-1 .ranking-position {
+    color: #FFD700;
+}
+
+/* 🥈 POSIÇÃO 2 */
+.ranking-row.posicao-2 {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, transparent 100%);
+    border-left: 3px solid #C0C0C0;
+}
+
+.ranking-row.posicao-2 .ranking-position {
+    color: #C0C0C0;
+}
+
+/* 🥉 POSIÇÃO 3 */
+.ranking-row.posicao-3 {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, transparent 100%);
+    border-left: 3px solid #CD7F32;
+}
+
+.ranking-row.posicao-3 .ranking-position {
+    color: #CD7F32;
+}
+
+/* USUÁRIO ATUAL */
+.ranking-row.destaque {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.05) 100%);
+    border-left: 3px solid #4CAF50;
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.05);
+}
+
 .ranking-position {
     font-weight: bold;
-    font-size: 18px;
+    font-size: 20px;
 }
 
 .ranking-name {
@@ -649,6 +700,14 @@ button {
     .ranking-row {
         grid-template-columns: 55px 1fr 85px;
         padding: 16px 12px;
+    }
+
+    .ranking-position {
+        font-size: 16px;
+    }
+
+    .ranking-name {
+        font-size: 14px;
     }
 
     .timer-buttons {
