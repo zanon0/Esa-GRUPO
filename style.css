@@ -506,7 +506,7 @@ button {
 }
 
 /* =========================
-   RANKING - VERSÃO BONITA! 
+   RANKING - VERSÃO BONITA!
 ========================= */
 
 .page-title {
@@ -558,7 +558,7 @@ button {
     border-bottom: none;
 }
 
-/* 🥇 POSIÇÃO 1 */
+/* POSIÇÃO 1 - OURO */
 .ranking-row.posicao-1 {
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, transparent 100%);
     border-left: 3px solid #FFD700;
@@ -568,7 +568,7 @@ button {
     color: #FFD700;
 }
 
-/* 🥈 POSIÇÃO 2 */
+/* POSIÇÃO 2 - PRATA */
 .ranking-row.posicao-2 {
     background: linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, transparent 100%);
     border-left: 3px solid #C0C0C0;
@@ -578,7 +578,7 @@ button {
     color: #C0C0C0;
 }
 
-/* 🥉 POSIÇÃO 3 */
+/* POSIÇÃO 3 - BRONZE */
 .ranking-row.posicao-3 {
     background: linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, transparent 100%);
     border-left: 3px solid #CD7F32;
@@ -588,7 +588,7 @@ button {
     color: #CD7F32;
 }
 
-/* USUÁRIO ATUAL */
+/* USUÁRIO ATUAL - DESTAQUE */
 .ranking-row.destaque {
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.05) 100%);
     border-left: 3px solid #4CAF50;
