@@ -91,6 +91,12 @@ async function carregarDadosUsuario(user) {
                 email: user.email,
                 criadoEm: firebase.firestore.FieldValue.serverTimestamp()
             });
+            await db.collection("ranking").doc(user.uid).set({
+                uid: user.uid,
+                nome: nome,
+                tempo: 0,
+                semana: obterSemanaAtual()
+            });
             usuarioAtual = { uid: user.uid, nome: nome, email: user.email };
         }
 
@@ -283,13 +289,9 @@ async function carregarRanking() {
     }
 }
 
-// ✅ FUNÇÃO CORRIGIDA DO RANKING
 function atualizarRanking() {
     const lista = document.getElementById("listaRanking");
-    if (!lista) {
-        console.error("❌ Elemento 'listaRanking' não encontrado!");
-        return;
-    }
+    if (!lista) return;
 
     lista.innerHTML = "";
 
@@ -308,7 +310,6 @@ function atualizarRanking() {
         const linha = document.createElement("div");
         linha.className = "ranking-row";
 
-        // 🔥 CORES PARA TOP 3
         if (index === 0) {
             linha.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, transparent 100%)";
             linha.style.borderLeft = "3px solid #FFD700";
@@ -320,7 +321,6 @@ function atualizarRanking() {
             linha.style.borderLeft = "3px solid #CD7F32";
         }
 
-        // 🔥 DESTACA O USUÁRIO ATUAL
         if (usuarioAtual && jogador.uid === usuarioAtual.uid) {
             linha.style.background = "linear-gradient(135deg, rgba(76, 175, 80, 0.25) 0%, rgba(76, 175, 80, 0.05) 100%)";
             linha.style.borderLeft = "3px solid #4CAF50";
@@ -547,4 +547,31 @@ function atualizarInterface() {
 function obterSemanaAtual() {
     const data = new Date();
     const primeiroDia = new Date(data.getFullYear(), 0, 1);
-    
+    const dias = Math.floor((data - primeiroDia) / 86400000);
+    return data.getFullYear() + "-" + Math.ceil((dias + primeiroDia.getDay() + 1) / 7);
+}
+
+function obterSemanaAnterior() {
+    const data = new Date();
+    data.setDate(data.getDate() - 7);
+    const primeiroDia = new Date(data.getFullYear(), 0, 1);
+    const dias = Math.floor((data - primeiroDia) / 86400000);
+    return data.getFullYear() + "-" + Math.ceil((dias + primeiroDia.getDay() + 1) / 7);
+}
+
+function escaparHTML(texto) {
+    const div = document.createElement("div");
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+setInterval(() => {
+    if (usuarioAtual) {
+        carregarRanking();
+        carregarComparacaoSemanal();
+    }
+}, 30000);
+
+console.log("✅ MyStudy inicializado!");
+console.log("📊 Ranking semanal ativo!");
+console.log("⏰ Reset automático: DOMINGO 23:59");
