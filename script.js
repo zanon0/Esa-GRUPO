@@ -1,6 +1,6 @@
 /* =====================================
    MYSTUDY - Versão Firebase
-   Seu cronômetro pessoal com ranking!
+   Com reset semanal e comparação!
 ===================================== */
 
 // =====================================
@@ -33,6 +33,8 @@ let estudando = false;
 let rankingAtual = [];
 let semanaAtual = '';
 let tempoEnviadoFirebase = 0;
+let semanaAnteriorTotal = 0;
+let semanaAtualTotal = 0;
 
 // =====================================
 // INICIALIZAÇÃO
@@ -48,10 +50,13 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("appScreen").classList.add("hidden");
         }
     });
+
+    // ⏰ VERIFICA RESET A CADA 1 MINUTO
+    setInterval(verificarResetSemanal, 60000);
 });
 
 // =====================================
-// LOGIN
+// LOGIN (SEM CADASTRO)
 // =====================================
 
 async function login() {
@@ -112,6 +117,7 @@ async function carregarDadosUsuario(user) {
         await carregarRanking();
         await carregarHistorico();
         await carregarTempoHoje();
+        await carregarComparacaoSemanal();
 
     } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -261,6 +267,7 @@ async function encerrar() {
             await carregarRanking();
             await carregarHistorico();
             await carregarTempoHoje();
+            await carregarComparacaoSemanal();
 
         } catch (error) {
             console.error("Erro ao salvar sessão:", error);
@@ -476,6 +483,182 @@ function atualizarHistorico(historico) {
 }
 
 // =====================================
+// 📊 COMPARAÇÃO SEMANAL
+// =====================================
+
+async function carregarComparacaoSemanal() {
+    if (!usuarioAtual) return;
+
+    try {
+        const semanaPassada = obterSemanaAnterior();
+        const semanaAtual = obterSemanaAtual();
+
+        // Busca tempo da semana atual
+        const snapshotAtual = await db.collection("ranking")
+            .where("uid", "==", usuarioAtual.uid)
+            .where("semana", "==", semanaAtual)
+            .get();
+
+        let tempoAtual = 0;
+        snapshotAtual.forEach(doc => {
+            tempoAtual = doc.data().tempo || 0;
+        });
+
+        // Busca tempo da semana anterior
+        const snapshotAnterior = await db.collection("ranking")
+            .where("uid", "==", usuarioAtual.uid)
+            .where("semana", "==", semanaPassada)
+            .get();
+
+        let tempoAnterior = 0;
+        snapshotAnterior.forEach(doc => {
+            tempoAnterior = doc.data().tempo || 0;
+        });
+
+        semanaAtualTotal = tempoAtual;
+        semanaAnteriorTotal = tempoAnterior;
+
+        // Calcula diferença percentual
+        let percentual = 0;
+        let comparacao = "";
+
+        if (tempoAnterior === 0 && tempoAtual === 0) {
+            comparacao = "📊 Comece a estudar esta semana!";
+        } else if (tempoAnterior === 0 && tempoAtual > 0) {
+            comparacao = "🚀 Primeira semana! Continue assim!";
+        } else if (tempoAtual > tempoAnterior) {
+            const aumento = ((tempoAtual - tempoAnterior) / tempoAnterior) * 100;
+            percentual = Math.round(aumento);
+            comparacao = `📈 ${percentual}% a mais que semana passada! 🎉`;
+        } else if (tempoAtual < tempoAnterior) {
+            const queda = ((tempoAnterior - tempoAtual) / tempoAnterior) * 100;
+            percentual = Math.round(queda);
+            comparacao = `📉 ${percentual}% a menos que semana passada. Bora recuperar! 💪`;
+        } else {
+            comparacao = "⚖️ Mesmo tempo da semana passada!";
+        }
+
+        // Mostra na tela
+        const comparacaoElement = document.getElementById("comparacaoSemanal");
+        if (comparacaoElement) {
+            comparacaoElement.innerHTML = `
+                <div style="background:#1b1b1b; border-radius:18px; padding:20px; margin-top:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <span style="color:#888;">Semana passada</span>
+                            <strong style="display:block; font-size:20px; color:#aaa;">${formatarTempo(tempoAnterior)}</strong>
+                        </div>
+                        <div style="text-align:center;">
+                            <span style="color:#888;">vs</span>
+                            <div style="font-size:24px;">${tempoAtual > tempoAnterior ? '📈' : tempoAtual < tempoAnterior ? '📉' : '⚖️'}</div>
+                        </div>
+                        <div>
+                            <span style="color:#888;">Esta semana</span>
+                            <strong style="display:block; font-size:20px; color:#4CAF50;">${formatarTempo(tempoAtual)}</strong>
+                        </div>
+                    </div>
+                    <div style="text-align:center; margin-top:15px; padding-top:15px; border-top:1px solid #292929; color:${tempoAtual >= tempoAnterior ? '#7ee787' : '#ff7676'};">
+                        ${comparacao}
+                    </div>
+                    <div style="text-align:center; margin-top:10px; font-size:13px; color:#555;">
+                        ⏰ Reset automático todo domingo às 23:59
+                    </div>
+                </div>
+            `;
+        }
+
+        // Salva no localStorage para mostrar no ranking
+        localStorage.setItem('ultimaComparacao', JSON.stringify({
+            semanaAtual: tempoAtual,
+            semanaAnterior: tempoAnterior,
+            comparacao: comparacao,
+            data: new Date().toISOString()
+        }));
+
+    } catch (error) {
+        console.error("Erro ao carregar comparação:", error);
+    }
+}
+
+// =====================================
+// ⏰ VERIFICA RESET SEMANAL
+// =====================================
+
+function verificarResetSemanal() {
+    const agora = new Date();
+    const diaSemana = agora.getDay(); // 0 = Domingo, 6 = Sábado
+    const hora = agora.getHours();
+    const minutos = agora.getMinutes();
+
+    // Se for Domingo às 23:59
+    if (diaSemana === 0 && hora === 23 && minutos === 59) {
+        console.log("🔄 RESET SEMANAL INICIADO!");
+        resetarRankingSemanal();
+    }
+}
+
+// =====================================
+// 🔄 RESETAR RANKING SEMANAL
+// =====================================
+
+async function resetarRankingSemanal() {
+    try {
+        // Busca todos os rankings da semana atual
+        const snapshot = await db.collection("ranking")
+            .where("semana", "==", semanaAtual)
+            .get();
+
+        // Salva o tempo de cada um como histórico semanal
+        const batch = db.batch();
+        const promessas = [];
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            
+            // Salva no histórico semanal
+            promessas.push(
+                db.collection("historico_semanal").add({
+                    uid: data.uid,
+                    nome: data.nome,
+                    tempo: data.tempo || 0,
+                    semana: semanaAtual,
+                    dataSalvo: firebase.firestore.FieldValue.serverTimestamp()
+                })
+            );
+
+            // Reseta o ranking para 0
+            batch.update(doc.ref, {
+                tempo: 0,
+                semana: obterSemanaAtual(),
+                ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        });
+
+        // Executa tudo
+        await Promise.all(promessas);
+        await batch.commit();
+
+        console.log("✅ Ranking resetado com sucesso!");
+        
+        // Atualiza a interface
+        await carregarRanking();
+        await carregarComparacaoSemanal();
+
+        // Mostra notificação
+        alert("📊 SEMANA FINALIZADA!\n\n" +
+              `Você estudou ${formatarTempo(semanaAtualTotal)} esta semana!\n` +
+              `Semana passada: ${formatarTempo(semanaAnteriorTotal)}\n\n` +
+              "Novo ranking começou! Bora estudar! 💪");
+
+        // Recarrega a página para atualizar tudo
+        location.reload();
+
+    } catch (error) {
+        console.error("Erro ao resetar ranking:", error);
+    }
+}
+
+// =====================================
 // ESTATÍSTICAS
 // =====================================
 
@@ -523,6 +706,14 @@ function obterSemanaAtual() {
     return data.getFullYear() + "-" + Math.ceil((dias + primeiroDia.getDay() + 1) / 7);
 }
 
+function obterSemanaAnterior() {
+    const data = new Date();
+    data.setDate(data.getDate() - 7);
+    const primeiroDia = new Date(data.getFullYear(), 0, 1);
+    const dias = Math.floor((data - primeiroDia) / 86400000);
+    return data.getFullYear() + "-" + Math.ceil((dias + primeiroDia.getDay() + 1) / 7);
+}
+
 function formatarTempo(segundos) {
     const horas = Math.floor(segundos / 3600);
     const minutos = Math.floor((segundos % 3600) / 60);
@@ -550,14 +741,16 @@ function escaparHTML(texto) {
 }
 
 // =====================================
-// RECARREGAR RANKING A CADA 30 SEGUNDOS
+// RECARREGAR DADOS A CADA 30 SEGUNDOS
 // =====================================
 
 setInterval(() => {
     if (usuarioAtual) {
         carregarRanking();
+        carregarComparacaoSemanal();
     }
 }, 30000);
 
 console.log("✅ MyStudy inicializado!");
 console.log("📊 Ranking semanal ativo!");
+console.log("⏰ Reset automático: DOMINGO 23:59");
