@@ -253,42 +253,6 @@ function atualizarTimer() {
 
 function formatar(numero) { return String(numero).padStart(2, "0"); }
 
-// =====================================
-// RANKING
-// =====================================
-
-async function atualizarTempoFirebase(tempoAdicional) {
-    if (!usuarioAtual || tempoAdicional <= 0) return;
-    try {
-        const docRef = db.collection("ranking").doc(usuarioAtual.uid);
-        const doc = await docRef.get();
-        if (doc.exists) {
-            const data = doc.data();
-            if (data.semana !== semanaAtual) {
-                await docRef.update({ tempo: tempoAdicional, semana: semanaAtual, ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp() });
-            } else {
-                await docRef.update({ tempo: firebase.firestore.FieldValue.increment(tempoAdicional), ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp() });
-            }
-        } else {
-            await docRef.set({ uid: usuarioAtual.uid, nome: usuarioAtual.nome, tempo: tempoAdicional, semana: semanaAtual, ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp() });
-        }
-    } catch (error) {
-        console.error("Erro ao atualizar ranking:", error);
-    }
-}
-
-async function carregarRanking() {
-    try {
-        const snapshot = await db.collection("ranking").where("semana", "==", semanaAtual).get();
-        rankingAtual = [];
-        snapshot.forEach(doc => { rankingAtual.push({ id: doc.id, ...doc.data() }); });
-        rankingAtual.sort((a, b) => b.tempo - a.tempo);
-        atualizarRanking();
-    } catch (error) {
-        console.error("Erro ao carregar ranking:", error);
-    }
-}
-
 function atualizarRanking() {
     const lista = document.getElementById("listaRanking");
     if (!lista) return;
@@ -298,9 +262,9 @@ function atualizarRanking() {
     if (rankingAtual.length === 0) {
         lista.innerHTML = `
             <div class="ranking-row">
-                <div class="ranking-position">-</div>
-                <div class="ranking-name">Nenhum registro esta semana</div>
-                <div class="ranking-time">0min</div>
+                <span class="col-posicao">-</span>
+                <span class="col-nome">Nenhum registro esta semana</span>
+                <span class="col-tempo">0min</span>
             </div>
         `;
         return;
@@ -310,29 +274,28 @@ function atualizarRanking() {
         const linha = document.createElement("div");
         linha.className = "ranking-row";
 
+        // TOP 3
         if (index === 0) {
-            linha.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, transparent 100%)";
-            linha.style.borderLeft = "3px solid #FFD700";
+            linha.classList.add("posicao-1");
         } else if (index === 1) {
-            linha.style.background = "linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, transparent 100%)";
-            linha.style.borderLeft = "3px solid #C0C0C0";
+            linha.classList.add("posicao-2");
         } else if (index === 2) {
-            linha.style.background = "linear-gradient(135deg, rgba(205, 127, 50, 0.2) 0%, transparent 100%)";
-            linha.style.borderLeft = "3px solid #CD7F32";
+            linha.classList.add("posicao-3");
         }
 
+        // DESTAQUE USUÁRIO ATUAL
         if (usuarioAtual && jogador.uid === usuarioAtual.uid) {
-            linha.style.background = "linear-gradient(135deg, rgba(76, 175, 80, 0.25) 0%, rgba(76, 175, 80, 0.05) 100%)";
-            linha.style.borderLeft = "3px solid #4CAF50";
-            linha.style.boxShadow = "0 0 30px rgba(76, 175, 80, 0.1)";
+            linha.classList.add("destaque");
         }
 
         const nome = jogador.nome || jogador.uid || "Anônimo";
+        const medalha = obterMedalha(index);
+        const tempo = formatarTempo(jogador.tempo || 0);
 
         linha.innerHTML = `
-            <div class="ranking-position">${obterMedalha(index)}</div>
-            <div class="ranking-name">${escaparHTML(nome)}</div>
-            <div class="ranking-time">${formatarTempo(jogador.tempo || 0)}</div>
+            <span class="col-posicao ranking-position">${medalha}</span>
+            <span class="col-nome ranking-name">${escaparHTML(nome)}</span>
+            <span class="col-tempo ranking-time">${tempo}</span>
         `;
 
         lista.appendChild(linha);
@@ -340,41 +303,6 @@ function atualizarRanking() {
 
     atualizarPosicao();
 }
-
-function obterMedalha(posicao) {
-    if (posicao === 0) return "🥇";
-    if (posicao === 1) return "🥈";
-    if (posicao === 2) return "🥉";
-    return `${posicao + 1}º`;
-}
-
-function formatarTempo(segundos) {
-    const horas = Math.floor(segundos / 3600);
-    const minutos = Math.floor((segundos % 3600) / 60);
-    if (horas > 0) return `${horas}h ${String(minutos).padStart(2, "0")}min`;
-    return `${minutos}min`;
-}
-
-function formatarTempoCompleto(segundos) {
-    const h = Math.floor(segundos / 3600);
-    const m = Math.floor((segundos % 3600) / 60);
-    const s = segundos % 60;
-    if (h > 0) return `${h}h ${m}min ${s}s`;
-    if (m > 0) return `${m}min ${s}s`;
-    return `${s}s`;
-}
-
-function atualizarPosicao() {
-    if (!usuarioAtual) return;
-    const posicao = rankingAtual.findIndex(r => r.uid === usuarioAtual.uid);
-    const elemento = document.getElementById("posicaoAtual");
-    if (posicao === -1 || rankingAtual.length === 0) {
-        elemento.innerText = "-";
-    } else {
-        elemento.innerText = `${posicao + 1}º`;
-    }
-}
-
 // =====================================
 // HISTÓRICO
 // =====================================
