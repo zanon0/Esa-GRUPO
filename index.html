@@ -8,19 +8,33 @@
 </head>
 <body>
 
-    <!-- TELA DE LOGIN -->
     <main id="authScreen" class="auth-screen">
         <div class="auth-box">
-            <div class="logo">📚</div>
+            <div class="logo">🧠</div>
             <h1>MyStudy</h1>
             <p class="subtitle">Estude. Cronometre. Supere seus limites.</p>
 
+            <!-- LOGIN -->
             <div id="loginForm">
                 <h2>Entrar</h2>
                 <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email">
                 <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
                 <button class="primary-btn" onclick="login()">Entrar</button>
+                <p class="switch-text">Ainda não possui uma conta?</p>
+                <button class="secondary-btn" onclick="mostrarCadastro()">Criar conta</button>
                 <p id="loginMensagem" class="mensagem"></p>
+            </div>
+
+            <!-- CADASTRO -->
+            <div id="cadastroForm" class="hidden">
+                <h2>Criar conta</h2>
+                <input type="text" id="cadNome" placeholder="Seu nome" autocomplete="username">
+                <input type="email" id="cadEmail" placeholder="E-mail" autocomplete="email">
+                <input type="password" id="cadSenha" placeholder="Crie uma senha (mínimo 6 caracteres)" autocomplete="new-password">
+                <button class="primary-btn" onclick="cadastrar()">Cadastrar</button>
+                <p class="switch-text">Já possui uma conta?</p>
+                <button class="secondary-btn" onclick="mostrarLogin()">Voltar para login</button>
+                <p id="cadastroMensagem" class="mensagem"></p>
             </div>
         </div>
     </main>
@@ -36,15 +50,15 @@
         <div id="menuOverlay" class="menu-overlay hidden" onclick="fecharMenu()"></div>
         <aside id="sideMenu" class="side-menu">
             <div class="menu-header">
-                <div class="menu-logo">📚</div>
+                <div class="menu-logo">🧠</div>
                 <div>
                     <strong>MyStudy</strong>
                     <small id="menuUsuario">Usuário</small>
                 </div>
             </div>
-            <button class="menu-item active" onclick="mostrarPagina('cronometro')">⏱️ <span>Cronômetro</span></button>
-            <button class="menu-item" onclick="mostrarPagina('ranking')">🏆 <span>Ranking</span></button>
-            <button class="menu-item" onclick="mostrarPagina('historico')">📅 <span>Histórico</span></button>
+            <button class="menu-item active" onclick="mostrarPagina('cronometro')">⏳ <span>Cronômetro</span></button>
+            <button class="menu-item" onclick="mostrarPagina('ranking')">👑 <span>Ranking</span></button>
+            <button class="menu-item" onclick="mostrarPagina('historico')">🗓️ <span>Histórico</span></button>
             <div class="menu-bottom">
                 <button class="menu-item logout" onclick="logout()">🚪 <span>Sair</span></button>
             </div>
@@ -58,7 +72,7 @@
             </div>
 
             <div class="timer-card">
-                <div class="timer-label">TEMPO DE ESTUDO</div>
+                <div class="timer-label">⏳ TEMPO DE ESTUDO</div>
                 <div id="timer">00:00:00</div>
                 <div id="statusTimer">Pronto para estudar</div>
                 <div class="timer-buttons">
@@ -69,21 +83,11 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card">
-                    <span>Hoje</span>
-                    <strong id="tempoHoje">00:00</strong>
-                </div>
-                <div class="stat-card">
-                    <span>Esta semana</span>
-                    <strong id="tempoSemana">00:00</strong>
-                </div>
-                <div class="stat-card">
-                    <span>Posição</span>
-                    <strong id="posicaoAtual">-</strong>
-                </div>
+                <div class="stat-card"><span>📆 Hoje</span><strong id="tempoHoje">00:00</strong></div>
+                <div class="stat-card"><span>📊 Esta semana</span><strong id="tempoSemana">00:00</strong></div>
+                <div class="stat-card"><span>🎯 Posição</span><strong id="posicaoAtual">-</strong></div>
             </div>
 
-            <!-- COMPARAÇÃO -->
             <div id="comparacaoSemanal"></div>
 
             <div class="quote-card">
@@ -95,15 +99,11 @@
         <!-- RANKING -->
         <section id="paginaRanking" class="page hidden">
             <div class="page-title">
-                <h2>🏆 Ranking semanal</h2>
+                <h2>👑 Ranking semanal</h2>
                 <p>Quem estudou mais esta semana?</p>
             </div>
             <div class="ranking-card">
-                <div class="ranking-header">
-                    <span>Posição</span>
-                    <span>Estudante</span>
-                    <span>Tempo</span>
-                </div>
+                <div class="ranking-header"><span>🏅 Posição</span><span>👤 Estudante</span><span>⏱️ Tempo</span></div>
                 <div id="listaRanking"></div>
             </div>
         </section>
@@ -111,7 +111,7 @@
         <!-- HISTÓRICO -->
         <section id="paginaHistorico" class="page hidden">
             <div class="page-title">
-                <h2>📅 Histórico</h2>
+                <h2>🗓️ Histórico</h2>
                 <p>Suas sessões de estudo.</p>
             </div>
             <div id="listaHistorico" class="history-card"></div>
