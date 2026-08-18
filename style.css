@@ -14,72 +14,53 @@ input {
     font-family: inherit;
 }
 
+/* =========================
+   UTILIDADES
+========================= */
 .hidden {
     display: none !important;
 }
 
 /* =========================
-   TELA DE LOGIN
+   LOGIN
 ========================= */
-
 .auth-screen {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0d1a0d 100%);
 }
 
 .auth-box {
     width: 100%;
     max-width: 420px;
-    background: rgba(27, 27, 27, 0.95);
+    background: #1b1b1b;
     border-radius: 24px;
     padding: 35px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 60px rgba(76, 175, 80, 0.05);
-    border: 1px solid rgba(76, 175, 80, 0.1);
-    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
 }
 
 .logo {
     font-size: 55px;
     text-align: center;
-    margin-bottom: 5px;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
 }
 
 .auth-box h1 {
     text-align: center;
     font-size: 34px;
     margin: 8px 0;
-    background: linear-gradient(135deg, #ffffff 0%, #4CAF50 50%, #45a049 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-size: 200% 200%;
-    animation: gradient 3s ease-in-out infinite;
-}
-
-@keyframes gradient {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
 }
 
 .subtitle {
     text-align: center;
-    color: #888;
+    color: #999;
     margin-bottom: 30px;
     line-height: 1.5;
 }
 
 .auth-box h2 {
     margin-bottom: 20px;
-    color: #fff;
 }
 
 input {
@@ -92,12 +73,10 @@ input {
     color: white;
     font-size: 16px;
     outline: none;
-    transition: all 0.3s ease;
 }
 
 input:focus {
-    border-color: #4CAF50;
-    box-shadow: 0 0 30px rgba(76, 175, 80, 0.1);
+    border-color: #777;
 }
 
 button {
@@ -106,19 +85,25 @@ button {
     padding: 14px;
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.3s ease;
 }
 
 .primary-btn {
     width: 100%;
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    color: white;
+    background: white;
+    color: black;
     font-weight: bold;
 }
 
-.primary-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
+.secondary-btn {
+    width: 100%;
+    background: #292929;
+    color: white;
+}
+
+.switch-text {
+    color: #888;
+    text-align: center;
+    margin: 20px 0 10px;
 }
 
 .mensagem {
@@ -131,7 +116,6 @@ button {
 /* =========================
    APLICATIVO
 ========================= */
-
 .app-screen {
     min-height: 100vh;
 }
@@ -142,8 +126,7 @@ button {
     align-items: center;
     padding: 0 20px;
     border-bottom: 1px solid #292929;
-    background: rgba(16, 16, 16, 0.95);
-    backdrop-filter: blur(10px);
+    background: #151515;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -154,35 +137,22 @@ button {
     color: white;
     font-size: 28px;
     padding: 5px 10px;
-    transition: all 0.3s ease;
-}
-
-.menu-button:hover {
-    transform: scale(1.1);
 }
 
 .top-title {
     font-size: 21px;
     font-weight: bold;
     margin-left: 10px;
-    background: linear-gradient(135deg, #ffffff 0%, #4CAF50 50%, #45a049 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 }
 
 .user-name {
     margin-left: auto;
     color: #aaa;
-    font-weight: bold;
-    padding: 5px 15px;
-    background: #292929;
-    border-radius: 20px;
 }
 
 /* =========================
-   MENU LATERAL
+   MENU
 ========================= */
-
 .side-menu {
     position: fixed;
     left: -280px;
@@ -223,9 +193,6 @@ button {
 .menu-header strong {
     display: block;
     font-size: 18px;
-    background: linear-gradient(135deg, #ffffff 0%, #4CAF50 50%, #45a049 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 }
 
 .menu-header small {
@@ -241,20 +208,12 @@ button {
     gap: 15px;
     text-align: left;
     margin-bottom: 8px;
-    padding: 12px 15px;
-    border-radius: 12px;
-    transition: all 0.3s ease;
 }
 
 .menu-item:hover,
 .menu-item.active {
     background: #292929;
     color: white;
-    transform: translateX(5px);
-}
-
-.menu-item span {
-    font-weight: 500;
 }
 
 .menu-bottom {
@@ -268,14 +227,9 @@ button {
     color: #ff7777;
 }
 
-.logout:hover {
-    background: #2a1a1a !important;
-}
-
 /* =========================
    PÁGINAS
 ========================= */
-
 .page {
     max-width: 900px;
     margin: auto;
@@ -284,11 +238,6 @@ button {
 
 .welcome h2 {
     margin-bottom: 5px;
-    font-size: 28px;
-}
-
-.welcome h2 span {
-    color: #4CAF50;
 }
 
 .welcome p {
@@ -298,22 +247,18 @@ button {
 /* =========================
    CRONÔMETRO
 ========================= */
-
 .timer-card {
-    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
+    background: #1b1b1b;
     border-radius: 25px;
     margin-top: 30px;
     padding: 40px 20px;
     text-align: center;
-    border: 1px solid #2a2a2a;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
 
 .timer-label {
     color: #888;
     font-size: 13px;
     letter-spacing: 2px;
-    text-transform: uppercase;
 }
 
 #timer {
@@ -321,9 +266,6 @@ button {
     font-weight: 300;
     letter-spacing: 3px;
     margin: 25px 0 10px;
-    font-family: 'Courier New', monospace;
-    color: #fff;
-    text-shadow: 0 0 40px rgba(76, 175, 80, 0.1);
 }
 
 #statusTimer {
@@ -340,23 +282,12 @@ button {
 
 .timer-buttons button {
     min-width: 120px;
-    padding: 14px 25px;
-    border-radius: 12px;
-    font-weight: bold;
-    transition: all 0.3s ease;
-}
-
-.timer-buttons button:hover {
-    transform: translateY(-2px);
 }
 
 .start-btn {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    color: white;
-}
-
-.start-btn:hover {
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+    background: white;
+    color: black;
+    font-weight: bold;
 }
 
 .pause-btn {
@@ -364,25 +295,14 @@ button {
     color: white;
 }
 
-.pause-btn:hover {
-    background: #404040;
-    box-shadow: 0 10px 30px rgba(255,255,255,0.05);
-}
-
 .stop-btn {
     background: #303030;
     color: #ff7777;
 }
 
-.stop-btn:hover {
-    background: #402020;
-    box-shadow: 0 10px 30px rgba(255,0,0,0.1);
-}
-
 /* =========================
    ESTATÍSTICAS
 ========================= */
-
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -391,17 +311,9 @@ button {
 }
 
 .stat-card {
-    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
+    background: #1b1b1b;
     border-radius: 18px;
     padding: 20px;
-    text-align: center;
-    border: 1px solid #2a2a2a;
-    transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    border-color: #4CAF50;
 }
 
 .stat-card span {
@@ -413,108 +325,34 @@ button {
 
 .stat-card strong {
     font-size: 22px;
-    color: #fff;
-}
-
-.stat-card strong#posicaoAtual {
-    color: #4CAF50;
 }
 
 /* =========================
-   COMPARAÇÃO SEMANAL
+   FRASE
 ========================= */
-
-.comparacao-semanal {
-    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
-    border-radius: 18px;
-    padding: 25px;
-    margin-top: 15px;
-    border: 1px solid #2a2a2a;
-    transition: all 0.3s ease;
-}
-
-.comparacao-semanal:hover {
-    border-color: #4CAF50;
-}
-
-.comparacao-grid {
+.quote-card {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
     gap: 15px;
+    margin-top: 15px;
+    background: #1b1b1b;
+    padding: 20px;
+    border-radius: 18px;
 }
 
-.comparacao-item {
-    text-align: center;
-    flex: 1;
-    min-width: 80px;
+.quote-card span {
+    font-size: 25px;
 }
 
-.comparacao-item .label {
-    color: #888;
-    font-size: 13px;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.comparacao-item .valor {
-    font-size: 22px;
-    font-weight: bold;
-}
-
-.comparacao-item .valor.anterior {
+.quote-card p {
     color: #aaa;
 }
 
-.comparacao-item .valor.atual {
-    color: #4CAF50;
-}
-
-.comparacao-vs {
-    font-size: 20px;
-    color: #555;
-    padding: 0 10px;
-}
-
-.comparacao-resultado {
-    text-align: center;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #292929;
-    font-size: 16px;
-    font-weight: bold;
-}
-
-.comparacao-resultado.positivo {
-    color: #7ee787;
-}
-
-.comparacao-resultado.negativo {
-    color: #ff7676;
-}
-
-.comparacao-resultado.neutro {
-    color: #ffd93d;
-}
-
-.comparacao-info {
-    text-align: center;
-    margin-top: 10px;
-    font-size: 12px;
-    color: #555;
-}
-
 /* =========================
-   RANKING - VERSÃO BONITA! 
+   RANKING
 ========================= */
-
 .page-title {
     margin-bottom: 25px;
-}
-
-.page-title h2 {
-    font-size: 28px;
 }
 
 .page-title p {
@@ -522,10 +360,9 @@ button {
 }
 
 .ranking-card {
-    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
+    background: #1b1b1b;
     border-radius: 20px;
     overflow: hidden;
-    border: 1px solid #2a2a2a;
 }
 
 .ranking-header,
@@ -539,87 +376,37 @@ button {
 .ranking-header {
     color: #777;
     font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
     border-bottom: 1px solid #303030;
-    background: #131313;
 }
 
 .ranking-row {
     border-bottom: 1px solid #292929;
-    transition: all 0.3s ease;
-}
-
-.ranking-row:hover {
-    transform: scale(1.01);
 }
 
 .ranking-row:last-child {
     border-bottom: none;
 }
 
-/* 🥇 POSIÇÃO 1 */
-.ranking-row.posicao-1 {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, transparent 100%);
-    border-left: 3px solid #FFD700;
-}
-
-.ranking-row.posicao-1 .ranking-position {
-    color: #FFD700;
-}
-
-/* 🥈 POSIÇÃO 2 */
-.ranking-row.posicao-2 {
-    background: linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, transparent 100%);
-    border-left: 3px solid #C0C0C0;
-}
-
-.ranking-row.posicao-2 .ranking-position {
-    color: #C0C0C0;
-}
-
-/* 🥉 POSIÇÃO 3 */
-.ranking-row.posicao-3 {
-    background: linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, transparent 100%);
-    border-left: 3px solid #CD7F32;
-}
-
-.ranking-row.posicao-3 .ranking-position {
-    color: #CD7F32;
-}
-
-/* USUÁRIO ATUAL */
-.ranking-row.destaque {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.05) 100%);
-    border-left: 3px solid #4CAF50;
-    box-shadow: 0 0 30px rgba(76, 175, 80, 0.05);
-}
-
 .ranking-position {
     font-weight: bold;
-    font-size: 20px;
 }
 
 .ranking-name {
     font-weight: bold;
-    font-size: 16px;
 }
 
 .ranking-time {
     text-align: right;
     color: #aaa;
-    font-weight: bold;
 }
 
 /* =========================
    HISTÓRICO
 ========================= */
-
 .history-card {
-    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
+    background: #1b1b1b;
     border-radius: 20px;
     overflow: hidden;
-    border: 1px solid #2a2a2a;
 }
 
 .history-row {
@@ -627,11 +414,6 @@ button {
     justify-content: space-between;
     padding: 18px 20px;
     border-bottom: 1px solid #292929;
-    transition: all 0.3s ease;
-}
-
-.history-row:hover {
-    background: #222;
 }
 
 .history-row:last-child {
@@ -644,38 +426,11 @@ button {
 
 .history-time {
     font-weight: bold;
-    color: #4CAF50;
 }
 
 /* =========================
-   QUOTE
+   CELULAR
 ========================= */
-
-.quote-card {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 15px;
-    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
-    padding: 20px;
-    border-radius: 18px;
-    border: 1px solid #2a2a2a;
-}
-
-.quote-card span {
-    font-size: 25px;
-}
-
-.quote-card p {
-    color: #aaa;
-    font-style: italic;
-    line-height: 1.5;
-}
-
-/* =========================
-   RESPONSIVO
-========================= */
-
 @media (max-width: 600px) {
     .auth-box {
         padding: 25px;
@@ -685,7 +440,6 @@ button {
         max-width: 100px;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 14px;
     }
 
     .stats-grid {
@@ -702,28 +456,11 @@ button {
         padding: 16px 12px;
     }
 
-    .ranking-position {
-        font-size: 16px;
-    }
-
-    .ranking-name {
-        font-size: 14px;
-    }
-
     .timer-buttons {
         flex-direction: column;
     }
 
     .timer-buttons button {
         width: 100%;
-    }
-
-    .comparacao-grid {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .comparacao-vs {
-        padding: 5px 0;
     }
 }
