@@ -506,7 +506,7 @@ button {
 }
 
 /* =========================
-   RANKING
+   RANKING - CORRIGIDO
 ========================= */
 
 .page-title {
@@ -528,63 +528,83 @@ button {
     border: 1px solid #2a2a2a;
 }
 
-.ranking-header,
-.ranking-row {
-    display: grid;
-    grid-template-columns: 80px 1fr 100px;
-    align-items: center;
-    padding: 18px 20px;
-}
-
+/* HEADER DO RANKING */
 .ranking-header {
+    display: grid;
+    grid-template-columns: 70px 1fr 100px;
+    align-items: center;
+    padding: 15px 20px;
+    background: #131313;
+    border-bottom: 1px solid #303030;
     color: #777;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    border-bottom: 1px solid #303030;
-    background: #131313;
 }
 
+/* LINHAS DO RANKING */
 .ranking-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 100px;
+    align-items: center;
+    padding: 14px 20px;
     border-bottom: 1px solid #292929;
     transition: all 0.3s ease;
-}
-
-.ranking-row:hover {
-    transform: scale(1.01);
 }
 
 .ranking-row:last-child {
     border-bottom: none;
 }
 
+.ranking-row:hover {
+    background: #222;
+}
+
+/* COLUNAS */
+.col-posicao {
+    text-align: center;
+    font-weight: bold;
+}
+
+.col-nome {
+    text-align: left;
+    font-weight: bold;
+    padding-left: 5px;
+}
+
+.col-tempo {
+    text-align: right;
+    font-weight: bold;
+    color: #aaa;
+}
+
 /* POSIÇÃO 1 - OURO */
 .ranking-row.posicao-1 {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12) 0%, transparent 100%);
     border-left: 3px solid #FFD700;
 }
 
-.ranking-row.posicao-1 .ranking-position {
+.ranking-row.posicao-1 .col-posicao {
     color: #FFD700;
 }
 
 /* POSIÇÃO 2 - PRATA */
 .ranking-row.posicao-2 {
-    background: linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.12) 0%, transparent 100%);
     border-left: 3px solid #C0C0C0;
 }
 
-.ranking-row.posicao-2 .ranking-position {
+.ranking-row.posicao-2 .col-posicao {
     color: #C0C0C0;
 }
 
 /* POSIÇÃO 3 - BRONZE */
 .ranking-row.posicao-3 {
-    background: linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.12) 0%, transparent 100%);
     border-left: 3px solid #CD7F32;
 }
 
-.ranking-row.posicao-3 .ranking-position {
+.ranking-row.posicao-3 .col-posicao {
     color: #CD7F32;
 }
 
@@ -595,22 +615,25 @@ button {
     box-shadow: 0 0 30px rgba(76, 175, 80, 0.05);
 }
 
+/* POSIÇÃO (MEDALHA OU NÚMERO) */
 .ranking-position {
     font-weight: bold;
     font-size: 20px;
+    text-align: center;
 }
 
 .ranking-name {
     font-weight: bold;
     font-size: 16px;
+    text-align: left;
+    padding-left: 5px;
 }
 
 .ranking-time {
     text-align: right;
-    color: #aaa;
     font-weight: bold;
+    color: #aaa;
 }
-
 /* =========================
    HISTÓRICO
 ========================= */
