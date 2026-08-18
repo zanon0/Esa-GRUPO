@@ -24,6 +24,25 @@
             </div>
         </div>
     </main>
+        <!-- =========================
+         PLAYER DE MÚSICA
+    ========================== -->
+    <div id="musicPlayer" class="music-player">
+        <div class="music-controls">
+            <button class="music-btn" id="playPauseBtn" onclick="togglePlayPause()" title="Play/Pause">
+                ▶️
+            </button>
+            <button class="music-btn" onclick="nextMusic()" title="Próxima música">
+                ⏭️
+            </button>
+            <span id="musicTitle" class="music-title">🎵 Música de fundo</span>
+        </div>
+        <div id="youtubePlayer"></div>
+    </div>
+
+    <!-- =========================
+         FIM DO PLAYER DE MÚSICA
+    ========================== -->
 
     <!-- APLICATIVO -->
     <main id="appScreen" class="app-screen hidden">
