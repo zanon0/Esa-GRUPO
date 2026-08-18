@@ -164,7 +164,7 @@ function fecharMenu() {
 }
 
 // =====================================
-// TROCAR PÁGINA (COM CADERNO)
+// TROCAR PÁGINA
 // =====================================
 
 function mostrarPagina(pagina) {
@@ -571,7 +571,7 @@ function escaparHTML(texto) {
 }
 
 // =====================================
-// CADERNO DE ANOTAÇÕES
+// CADERNO DE ANOTAÇÕES - CORRIGIDO
 // =====================================
 
 let abasAtuais = [];
@@ -580,7 +580,10 @@ let salvandoTimeout = null;
 
 // Carrega as abas do Firebase
 async function carregarAbas() {
-    if (!usuarioAtual) return;
+    if (!usuarioAtual) {
+        console.log("❌ Usuário não logado");
+        return;
+    }
 
     try {
         const snapshot = await db.collection("caderno")
@@ -608,12 +611,17 @@ async function carregarAbas() {
 
     } catch (error) {
         console.error("Erro ao carregar abas:", error);
-        criarAbaPadrao();
+        // Tenta criar uma aba padrão se falhar
+        if (usuarioAtual) {
+            await criarAbaPadrao();
+        }
     }
 }
 
 // Cria aba padrão
 async function criarAbaPadrao() {
+    if (!usuarioAtual) return;
+    
     try {
         const novaAba = {
             uid: usuarioAtual.uid,
@@ -639,6 +647,11 @@ function renderizarAbas() {
 
     lista.innerHTML = "";
 
+    if (abasAtuais.length === 0) {
+        lista.innerHTML = `<span style="color:#555; padding:10px;">Nenhuma aba</span>`;
+        return;
+    }
+
     abasAtuais.forEach(aba => {
         const tab = document.createElement("button");
         tab.className = "caderno-tab";
@@ -646,6 +659,7 @@ function renderizarAbas() {
             tab.classList.add("active");
         }
         tab.textContent = aba.titulo || "Sem título";
+        tab.title = "Clique para abrir";
         tab.onclick = () => selecionarAba(aba.id);
         lista.appendChild(tab);
     });
@@ -653,10 +667,10 @@ function renderizarAbas() {
 
 // Seleciona uma aba
 function selecionarAba(id) {
-    if (salvandoTimeout) {
-        clearTimeout(salvandoTimeout);
-    }
-    if (abaAtualId) {
+    if (!id) return;
+    
+    // Salva a aba atual antes de trocar
+    if (abaAtualId && abaAtualId !== id) {
         salvarAnotacao();
     }
     
@@ -668,7 +682,10 @@ function selecionarAba(id) {
 // Carrega o conteúdo de uma aba
 function carregarAba(id) {
     const aba = abasAtuais.find(a => a.id === id);
-    if (!aba) return;
+    if (!aba) {
+        console.log("❌ Aba não encontrada:", id);
+        return;
+    }
 
     document.getElementById("cadernoTitulo").value = aba.titulo || "Sem título";
     document.getElementById("cadernoTexto").value = aba.conteudo || "";
@@ -679,7 +696,10 @@ function carregarAba(id) {
 
 // Salva a anotação atual
 async function salvarAnotacao() {
-    if (!abaAtualId || !usuarioAtual) return;
+    if (!abaAtualId || !usuarioAtual) {
+        console.log("❌ Não é possível salvar: sem aba ou usuário");
+        return;
+    }
 
     const titulo = document.getElementById("cadernoTitulo").value.trim() || "Sem título";
     const conteudo = document.getElementById("cadernoTexto").value;
@@ -694,6 +714,7 @@ async function salvarAnotacao() {
             ultimaEdicao: firebase.firestore.FieldValue.serverTimestamp()
         });
 
+        // Atualiza a lista local
         const aba = abasAtuais.find(a => a.id === abaAtualId);
         if (aba) {
             aba.titulo = titulo;
@@ -717,7 +738,7 @@ function atualizarStats() {
     const texto = document.getElementById("cadernoTexto").value;
     const palavras = texto.trim() ? texto.trim().split(/\s+/).length : 0;
     const caracteres = texto.length;
-    document.getElementById("cadernoStats").innerText = `${palavras} palavras · ${caracteres} caracteres`;
+    document.getElementById("cadernoStats").innerText = `📝 ${palavras} palavras · ${caracteres} caracteres`;
 }
 
 // Salva automaticamente com debounce
@@ -730,12 +751,15 @@ function salvarAnotacaoDebounce() {
     salvandoTimeout = setTimeout(() => {
         salvarAnotacao();
         salvandoTimeout = null;
-    }, 1000);
+    }, 800);
 }
 
 // Cria nova aba
 async function criarNovaAba() {
-    if (!usuarioAtual) return;
+    if (!usuarioAtual) {
+        alert("Faça login primeiro!");
+        return;
+    }
 
     const novaAba = {
         uid: usuarioAtual.uid,
@@ -753,11 +777,17 @@ async function criarNovaAba() {
         abaAtualId = docRef.id;
         renderizarAbas();
         carregarAba(docRef.id);
-        document.getElementById("cadernoTitulo").focus();
-        document.getElementById("cadernoTitulo").select();
+        
+        // Foca no título para renomear
+        setTimeout(() => {
+            const tituloInput = document.getElementById("cadernoTitulo");
+            tituloInput.focus();
+            tituloInput.select();
+        }, 200);
 
     } catch (error) {
         console.error("Erro ao criar nova aba:", error);
+        alert("Erro ao criar nova aba. Tente novamente.");
     }
 }
 
@@ -789,7 +819,8 @@ async function excluirAba() {
         return;
     }
 
-    if (!confirm(`Excluir a aba "${document.getElementById("cadernoTitulo").value}"?`)) return;
+    const aba = abasAtuais.find(a => a.id === abaAtualId);
+    if (!confirm(`Excluir a aba "${aba ? aba.titulo : 'Sem título'}"?`)) return;
 
     try {
         await db.collection("caderno").doc(abaAtualId).delete();
@@ -805,6 +836,7 @@ async function excluirAba() {
 
     } catch (error) {
         console.error("Erro ao excluir:", error);
+        alert("Erro ao excluir aba. Tente novamente.");
     }
 }
 
