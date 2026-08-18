@@ -569,6 +569,287 @@ setInterval(() => {
     }
 }, 30000);
 
+// =====================================
+// CADERNO DE ANOTAÇÕES
+// =====================================
+
+let abasAtuais = [];
+let abaAtualId = null;
+let salvandoTimeout = null;
+
+// Carrega as abas do Firebase
+async function carregarAbas() {
+    if (!usuarioAtual) return;
+
+    try {
+        const snapshot = await db.collection("caderno")
+            .where("uid", "==", usuarioAtual.uid)
+            .get();
+
+        abasAtuais = [];
+        snapshot.forEach(doc => {
+            abasAtuais.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        // Ordena por ordem
+        abasAtuais.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+
+        if (abasAtuais.length === 0) {
+            // Cria aba padrão
+            await criarAbaPadrao();
+        } else {
+            renderizarAbas();
+            // Abre a primeira aba
+            const primeiraAba = abasAtuais[0];
+            abaAtualId = primeiraAba.id;
+            carregarAba(primeiraAba.id);
+        }
+
+    } catch (error) {
+        console.error("Erro ao carregar abas:", error);
+        // Fallback: cria aba padrão
+        criarAbaPadrao();
+    }
+}
+
+// Cria aba padrão
+async function criarAbaPadrao() {
+    try {
+        const novaAba = {
+            uid: usuarioAtual.uid,
+            titulo: "Minhas anotações",
+            conteudo: "Comece a escrever aqui...",
+            ordem: 0,
+            criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        const docRef = await db.collection("caderno").add(novaAba);
+        abaAtualId = docRef.id;
+        await carregarAbas();
+
+    } catch (error) {
+        console.error("Erro ao criar aba padrão:", error);
+    }
+}
+
+// Renderiza as abas na tela
+function renderizarAbas() {
+    const lista = document.getElementById("listaAbas");
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    abasAtuais.forEach(aba => {
+        const tab = document.createElement("button");
+        tab.className = "caderno-tab";
+        if (aba.id === abaAtualId) {
+            tab.classList.add("active");
+        }
+        tab.textContent = aba.titulo || "Sem título";
+        tab.onclick = () => selecionarAba(aba.id);
+        lista.appendChild(tab);
+    });
+}
+
+// Seleciona uma aba
+function selecionarAba(id) {
+    if (salvandoTimeout) {
+        clearTimeout(salvandoTimeout);
+    }
+    // Salva a aba atual antes de trocar
+    if (abaAtualId) {
+        salvarAnotacao();
+    }
+    
+    abaAtualId = id;
+    renderizarAbas();
+    carregarAba(id);
+}
+
+// Carrega o conteúdo de uma aba
+function carregarAba(id) {
+    const aba = abasAtuais.find(a => a.id === id);
+    if (!aba) return;
+
+    document.getElementById("cadernoTitulo").value = aba.titulo || "Sem título";
+    document.getElementById("cadernoTexto").value = aba.conteudo || "";
+    atualizarStats();
+    document.getElementById("cadernoSalvo").innerText = "💾 Carregado";
+    document.getElementById("cadernoSalvo").className = "salvo";
+}
+
+// Salva a anotação atual
+async function salvarAnotacao() {
+    if (!abaAtualId || !usuarioAtual) return;
+
+    const titulo = document.getElementById("cadernoTitulo").value.trim() || "Sem título";
+    const conteudo = document.getElementById("cadernoTexto").value;
+
+    document.getElementById("cadernoSalvo").innerText = "⏳ Salvando...";
+    document.getElementById("cadernoSalvo").className = "salvando";
+
+    try {
+        await db.collection("caderno").doc(abaAtualId).update({
+            titulo: titulo,
+            conteudo: conteudo,
+            ultimaEdicao: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Atualiza a lista local
+        const aba = abasAtuais.find(a => a.id === abaAtualId);
+        if (aba) {
+            aba.titulo = titulo;
+            aba.conteudo = conteudo;
+        }
+
+        document.getElementById("cadernoSalvo").innerText = "💾 Salvo!";
+        document.getElementById("cadernoSalvo").className = "salvo";
+        atualizarStats();
+        renderizarAbas();
+
+    } catch (error) {
+        console.error("Erro ao salvar:", error);
+        document.getElementById("cadernoSalvo").innerText = "❌ Erro ao salvar";
+        document.getElementById("cadernoSalvo").className = "";
+    }
+}
+
+// Atualiza estatísticas (palavras)
+function atualizarStats() {
+    const texto = document.getElementById("cadernoTexto").value;
+    const palavras = texto.trim() ? texto.trim().split(/\s+/).length : 0;
+    const caracteres = texto.length;
+    document.getElementById("cadernoStats").innerText = `${palavras} palavras · ${caracteres} caracteres`;
+}
+
+// Salva automaticamente com debounce
+function salvarAnotacaoDebounce() {
+    if (salvandoTimeout) {
+        clearTimeout(salvandoTimeout);
+    }
+    document.getElementById("cadernoSalvo").innerText = "⏳ Salvando...";
+    document.getElementById("cadernoSalvo").className = "salvando";
+    salvandoTimeout = setTimeout(() => {
+        salvarAnotacao();
+        salvandoTimeout = null;
+    }, 1000);
+}
+
+// Cria uma nova aba
+async function criarNovaAba() {
+    if (!usuarioAtual) return;
+
+    const novaAba = {
+        uid: usuarioAtual.uid,
+        titulo: `Matéria ${abasAtuais.length + 1}`,
+        conteudo: "",
+        ordem: abasAtuais.length,
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    try {
+        const docRef = await db.collection("caderno").add(novaAba);
+        novaAba.id = docRef.id;
+        abasAtuais.push(novaAba);
+        
+        // Seleciona a nova aba
+        abaAtualId = docRef.id;
+        renderizarAbas();
+        carregarAba(docRef.id);
+        document.getElementById("cadernoTitulo").focus();
+        document.getElementById("cadernoTitulo").select();
+
+    } catch (error) {
+        console.error("Erro ao criar nova aba:", error);
+    }
+}
+
+// Renomeia a aba atual
+async function renomearAba(novoTitulo) {
+    if (!abaAtualId || !usuarioAtual) return;
+
+    const titulo = novoTitulo.trim() || "Sem título";
+    
+    try {
+        await db.collection("caderno").doc(abaAtualId).update({
+            titulo: titulo
+        });
+
+        const aba = abasAtuais.find(a => a.id === abaAtualId);
+        if (aba) aba.titulo = titulo;
+        renderizarAbas();
+
+    } catch (error) {
+        console.error("Erro ao renomear:", error);
+    }
+}
+
+// Exclui a aba atual
+async function excluirAba() {
+    if (!abaAtualId || !usuarioAtual) return;
+    if (abasAtuais.length <= 1) {
+        alert("Você precisa ter pelo menos uma aba!");
+        return;
+    }
+
+    if (!confirm(`Excluir a aba "${document.getElementById("cadernoTitulo").value}"?`)) return;
+
+    try {
+        await db.collection("caderno").doc(abaAtualId).delete();
+        
+        // Remove da lista local
+        const index = abasAtuais.findIndex(a => a.id === abaAtualId);
+        if (index !== -1) {
+            abasAtuais.splice(index, 1);
+        }
+
+        // Seleciona a primeira aba
+        abaAtualId = abasAtuais[0].id;
+        renderizarAbas();
+        carregarAba(abaAtualId);
+
+    } catch (error) {
+        console.error("Erro ao excluir:", error);
+    }
+}
+
+// Modifica a função mostrarPagina para incluir o caderno
+function mostrarPagina(pagina) {
+    fecharMenu();
+    document.getElementById("paginaCronometro").classList.add("hidden");
+    document.getElementById("paginaRanking").classList.add("hidden");
+    document.getElementById("paginaHistorico").classList.add("hidden");
+    document.getElementById("paginaCaderno").classList.add("hidden");
+
+    if (pagina === "cronometro") {
+        document.getElementById("paginaCronometro").classList.remove("hidden");
+        carregarComparacaoSemanal();
+    } else if (pagina === "ranking") {
+        document.getElementById("paginaRanking").classList.remove("hidden");
+        carregarRanking();
+    } else if (pagina === "historico") {
+        document.getElementById("paginaHistorico").classList.remove("hidden");
+        carregarHistorico();
+    } else if (pagina === "caderno") {
+        document.getElementById("paginaCaderno").classList.remove("hidden");
+        carregarAbas();
+    }
+}
+
+// Adiciona evento para salvar automaticamente ao digitar
+document.addEventListener("DOMContentLoaded", () => {
+    const textoElement = document.getElementById("cadernoTexto");
+    if (textoElement) {
+        textoElement.addEventListener("input", () => {
+            salvarAnotacaoDebounce();
+            atualizarStats();
+        });
+    }
+});
+
 console.log("✅ MyStudy inicializado!");
 console.log("📊 Ranking semanal ativo!");
 console.log("⏰ Reset automático: DOMINGO 23:59");
