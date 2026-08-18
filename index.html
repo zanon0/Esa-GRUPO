@@ -8,17 +8,13 @@
 </head>
 <body>
 
-    <!-- =========================
-         TELA DE LOGIN
-    ========================== -->
-
+    <!-- TELA DE LOGIN -->
     <main id="authScreen" class="auth-screen">
         <div class="auth-box">
             <div class="logo">📚</div>
             <h1>MyStudy</h1>
             <p class="subtitle">Estude. Cronometre. Supere seus limites.</p>
 
-            <!-- LOGIN -->
             <div id="loginForm">
                 <h2>Entrar</h2>
                 <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email">
@@ -29,19 +25,14 @@
         </div>
     </main>
 
-    <!-- =========================
-         APLICATIVO
-    ========================== -->
-
+    <!-- APLICATIVO -->
     <main id="appScreen" class="app-screen hidden">
-        <!-- HEADER -->
         <header class="topbar">
             <button class="menu-button" onclick="abrirMenu()">☰</button>
             <div class="top-title">MyStudy</div>
             <div class="user-name" id="usuarioNome">Usuário</div>
         </header>
 
-        <!-- MENU LATERAL -->
         <div id="menuOverlay" class="menu-overlay hidden" onclick="fecharMenu()"></div>
         <aside id="sideMenu" class="side-menu">
             <div class="menu-header">
@@ -51,25 +42,15 @@
                     <small id="menuUsuario">Usuário</small>
                 </div>
             </div>
-            <button class="menu-item active" onclick="mostrarPagina('cronometro')">
-                ⏱️ <span>Cronômetro</span>
-            </button>
-            <button class="menu-item" onclick="mostrarPagina('ranking')">
-                🏆 <span>Ranking</span>
-            </button>
-            <button class="menu-item" onclick="mostrarPagina('historico')">
-                📅 <span>Histórico</span>
-            </button>
+            <button class="menu-item active" onclick="mostrarPagina('cronometro')">⏱️ <span>Cronômetro</span></button>
+            <button class="menu-item" onclick="mostrarPagina('ranking')">🏆 <span>Ranking</span></button>
+            <button class="menu-item" onclick="mostrarPagina('historico')">📅 <span>Histórico</span></button>
             <div class="menu-bottom">
-                <button class="menu-item logout" onclick="logout()">
-                    🚪 <span>Sair</span>
-                </button>
+                <button class="menu-item logout" onclick="logout()">🚪 <span>Sair</span></button>
             </div>
         </aside>
 
-        <!-- =========================
-             PÁGINA CRONÔMETRO
-        ========================== -->
+        <!-- CRONÔMETRO -->
         <section id="paginaCronometro" class="page">
             <div class="welcome">
                 <h2>Olá, <span id="nomeWelcome"></span> 👋</h2>
@@ -102,9 +83,7 @@
                 </div>
             </div>
 
-            <!-- =========================
-                 COMPARAÇÃO SEMANAL - BONITA
-            ========================== -->
+            <!-- COMPARAÇÃO -->
             <div id="comparacaoSemanal"></div>
 
             <div class="quote-card">
@@ -113,9 +92,7 @@
             </div>
         </section>
 
-        <!-- =========================
-             PÁGINA RANKING
-        ========================== -->
+        <!-- RANKING -->
         <section id="paginaRanking" class="page hidden">
             <div class="page-title">
                 <h2>🏆 Ranking semanal</h2>
@@ -131,9 +108,7 @@
             </div>
         </section>
 
-        <!-- =========================
-             HISTÓRICO
-        ========================== -->
+        <!-- HISTÓRICO -->
         <section id="paginaHistorico" class="page hidden">
             <div class="page-title">
                 <h2>📅 Histórico</h2>
@@ -143,11 +118,9 @@
         </section>
     </main>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
     <script src="script.js"></script>
 </body>
 </html>
