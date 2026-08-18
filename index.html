@@ -141,36 +141,4 @@
             </div>
             <div id="listaHistorico" class="history-card"></div>
         </section>
-    </main>
-
-    <!-- =========================
-         PLAYER DE MÚSICA COM VOLUME
-    ========================== -->
-    <div id="musicPlayer" class="music-player">
-        <div class="music-controls">
-            <button class="music-btn" id="playPauseBtn" onclick="togglePlayPause()" title="Play/Pause">
-                ▶️
-            </button>
-            <button class="music-btn" onclick="nextMusic()" title="Próxima música">
-                ⏭️
-            </button>
-            <span id="musicTitle" class="music-title">🎵 Música de fundo</span>
-        </div>
-        <div class="volume-control">
-            <span class="volume-icon">🔊</span>
-            <input type="range" id="volumeSlider" class="volume-slider" 
-                   min="0" max="100" value="50" 
-                   oninput="ajustarVolume(this.value)">
-            <span id="volumeValue" class="volume-value">50%</span>
-        </div>
-        <div id="youtubePlayer"></div>
-    </div>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
-    <script src="script.js"></script>
-</body>
-</html>
+    </main>
