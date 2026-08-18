@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyStudy</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -28,6 +30,22 @@
             </div>
         </div>
     </main>
+
+    <!-- =========================
+         MODAL DE MATÉRIA
+    ========================== -->
+
+    <div id="modalMateria" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>📚 Qual matéria você vai estudar?</h3>
+            <input type="text" id="materiaInput" placeholder="Ex: Matemática, Física, Português..." maxlength="50">
+            <div class="modal-buttons">
+                <button class="modal-cancel" onclick="cancelarInicio()">Cancelar</button>
+                <button class="modal-confirm" onclick="confirmarInicio()">▶ Começar</button>
+            </div>
+            <p id="modalMensagem" class="mensagem"></p>
+        </div>
+    </div>
 
     <!-- =========================
          APLICATIVO
@@ -60,8 +78,8 @@
             <button class="menu-item" onclick="mostrarPagina('historico')">
                 🗓️ <span>Histórico</span>
             </button>
-            <button class="menu-item" onclick="mostrarPagina('caderno')">
-                📓 <span>Caderno</span>
+            <button class="menu-item" onclick="mostrarPagina('estatisticas')">
+                📊 <span>Estatísticas</span>
             </button>
             <div class="menu-bottom">
                 <button class="menu-item logout" onclick="logout()">
@@ -83,6 +101,9 @@
                 <div class="timer-label">⏳ TEMPO DE ESTUDO</div>
                 <div id="timer">00:00:00</div>
                 <div id="statusTimer">✅ Pronto para estudar</div>
+                <div id="materiaAtualDisplay" class="materia-display hidden">
+                    📚 <span id="materiaAtualTexto"></span>
+                </div>
                 <div class="timer-buttons">
                     <button id="startButton" class="start-btn" onclick="iniciar()">▶ Iniciar</button>
                     <button class="pause-btn" onclick="pausar()">⏸ Pausar</button>
@@ -133,45 +154,52 @@
         </section>
 
         <!-- =========================
-             HISTÓRICO
+             PÁGINA HISTÓRICO
         ========================== -->
         <section id="paginaHistorico" class="page hidden">
             <div class="page-title">
                 <h2>🗓️ Histórico</h2>
-                <p>Suas sessões de estudo.</p>
+                <p>Visualize suas sessões por data.</p>
             </div>
+            
+            <div class="history-filter">
+                <label for="historyDate">📅 Selecionar data:</label>
+                <input type="date" id="historyDate" onchange="carregarHistorico()">
+            </div>
+
             <div id="listaHistorico" class="history-card"></div>
         </section>
 
         <!-- =========================
-             PÁGINA CADERNO
+             PÁGINA ESTATÍSTICAS
         ========================== -->
-        <section id="paginaCaderno" class="page hidden">
+        <section id="paginaEstatisticas" class="page hidden">
             <div class="page-title">
-                <h2>📓 Meu Caderno</h2>
-                <p>Organize suas anotações por matéria.</p>
+                <h2>📊 Estatísticas</h2>
+                <p>Seu desempenho geral de estudos.</p>
             </div>
 
-            <!-- ABAS -->
-            <div class="caderno-tabs">
-                <div id="listaAbas" class="caderno-tabs-list">
-                    <!-- As abas serão geradas aqui -->
+            <div class="stats-summary-grid">
+                <div class="stat-card">
+                    <span>⏱️ Total estudado</span>
+                    <strong id="statTotalHoras">0h</strong>
                 </div>
-                <button class="caderno-add-tab" onclick="criarNovaAba()">➕ Nova</button>
+                <div class="stat-card">
+                    <span>📚 Sessões realizadas</span>
+                    <strong id="statTotalSessoes">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span>🏆 Matéria mais estudada</span>
+                    <strong id="statMateriaFavorita">-</strong>
+                </div>
             </div>
 
-            <!-- CONTEÚDO -->
-            <div class="caderno-content">
-                <div class="caderno-header">
-                    <input type="text" id="cadernoTitulo" class="caderno-titulo" placeholder="Título da matéria" onchange="renomearAba(this.value)">
-                    <button class="caderno-delete" onclick="excluirAba()">🗑️ Excluir</button>
-                </div>
-                <textarea id="cadernoTexto" class="caderno-texto" placeholder="Comece a escrever suas anotações..."></textarea>
-                <div class="caderno-info">
-                    <span id="cadernoStats">📝 0 palavras</span>
-                    <span id="cadernoSalvo">💾 Salvo automaticamente</span>
-                </div>
+            <div class="chart-card">
+                <h3>📈 Tempo por matéria</h3>
+                <canvas id="graficoMaterias"></canvas>
             </div>
+
+            <div id="listaTempoPorMateria" class="materia-stats-list"></div>
         </section>
     </main>
 
