@@ -18,12 +18,17 @@ input {
     display: none !important;
 }
 
+/* =========================
+   TELA DE LOGIN
+========================= */
+
 .auth-screen {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    background: linear-gradient(135deg, #101010 0%, #1a1a2e 100%);
 }
 
 .auth-box {
@@ -32,29 +37,35 @@ input {
     background: #1b1b1b;
     border-radius: 24px;
     padding: 35px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(76, 175, 80, 0.05);
+    border: 1px solid #2a2a2a;
 }
 
 .logo {
     font-size: 55px;
     text-align: center;
+    margin-bottom: 5px;
 }
 
 .auth-box h1 {
     text-align: center;
     font-size: 34px;
     margin: 8px 0;
+    background: linear-gradient(135deg, #fff 0%, #4CAF50 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
     text-align: center;
-    color: #999;
+    color: #888;
     margin-bottom: 30px;
     line-height: 1.5;
 }
 
 .auth-box h2 {
     margin-bottom: 20px;
+    color: #fff;
 }
 
 input {
@@ -67,10 +78,12 @@ input {
     color: white;
     font-size: 16px;
     outline: none;
+    transition: all 0.3s ease;
 }
 
 input:focus {
-    border-color: #777;
+    border-color: #4CAF50;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.1);
 }
 
 button {
@@ -79,13 +92,19 @@ button {
     padding: 14px;
     font-size: 16px;
     cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .primary-btn {
     width: 100%;
-    background: white;
-    color: black;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
     font-weight: bold;
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
 }
 
 .mensagem {
@@ -94,6 +113,10 @@ button {
     color: #ff7676;
     margin-top: 15px;
 }
+
+/* =========================
+   APLICATIVO
+========================= */
 
 .app-screen {
     min-height: 100vh;
@@ -105,7 +128,8 @@ button {
     align-items: center;
     padding: 0 20px;
     border-bottom: 1px solid #292929;
-    background: #151515;
+    background: rgba(21, 21, 21, 0.95);
+    backdrop-filter: blur(10px);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -116,18 +140,34 @@ button {
     color: white;
     font-size: 28px;
     padding: 5px 10px;
+    transition: all 0.3s ease;
+}
+
+.menu-button:hover {
+    transform: scale(1.1);
 }
 
 .top-title {
     font-size: 21px;
     font-weight: bold;
     margin-left: 10px;
+    background: linear-gradient(135deg, #fff 0%, #4CAF50 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .user-name {
     margin-left: auto;
     color: #aaa;
+    font-weight: bold;
+    padding: 5px 15px;
+    background: #292929;
+    border-radius: 20px;
 }
+
+/* =========================
+   MENU LATERAL
+========================= */
 
 .side-menu {
     position: fixed;
@@ -169,6 +209,9 @@ button {
 .menu-header strong {
     display: block;
     font-size: 18px;
+    background: linear-gradient(135deg, #fff 0%, #4CAF50 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .menu-header small {
@@ -184,12 +227,20 @@ button {
     gap: 15px;
     text-align: left;
     margin-bottom: 8px;
+    padding: 12px 15px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
 }
 
 .menu-item:hover,
 .menu-item.active {
     background: #292929;
     color: white;
+    transform: translateX(5px);
+}
+
+.menu-item span {
+    font-weight: 500;
 }
 
 .menu-bottom {
@@ -203,6 +254,14 @@ button {
     color: #ff7777;
 }
 
+.logout:hover {
+    background: #2a1a1a !important;
+}
+
+/* =========================
+   PÁGINAS
+========================= */
+
 .page {
     max-width: 900px;
     margin: auto;
@@ -211,24 +270,36 @@ button {
 
 .welcome h2 {
     margin-bottom: 5px;
+    font-size: 28px;
+}
+
+.welcome h2 span {
+    color: #4CAF50;
 }
 
 .welcome p {
     color: #888;
 }
 
+/* =========================
+   CRONÔMETRO
+========================= */
+
 .timer-card {
-    background: #1b1b1b;
+    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
     border-radius: 25px;
     margin-top: 30px;
     padding: 40px 20px;
     text-align: center;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
 
 .timer-label {
     color: #888;
     font-size: 13px;
     letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
 #timer {
@@ -236,6 +307,9 @@ button {
     font-weight: 300;
     letter-spacing: 3px;
     margin: 25px 0 10px;
+    font-family: 'Courier New', monospace;
+    color: #fff;
+    text-shadow: 0 0 40px rgba(76, 175, 80, 0.1);
 }
 
 #statusTimer {
@@ -252,12 +326,23 @@ button {
 
 .timer-buttons button {
     min-width: 120px;
+    padding: 14px 25px;
+    border-radius: 12px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.timer-buttons button:hover {
+    transform: translateY(-2px);
 }
 
 .start-btn {
-    background: white;
-    color: black;
-    font-weight: bold;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+}
+
+.start-btn:hover {
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
 }
 
 .pause-btn {
@@ -265,22 +350,44 @@ button {
     color: white;
 }
 
+.pause-btn:hover {
+    background: #404040;
+    box-shadow: 0 10px 30px rgba(255,255,255,0.05);
+}
+
 .stop-btn {
     background: #303030;
     color: #ff7777;
 }
 
+.stop-btn:hover {
+    background: #402020;
+    box-shadow: 0 10px 30px rgba(255,0,0,0.1);
+}
+
+/* =========================
+   ESTATÍSTICAS
+========================= */
+
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 15px;
     margin-top: 15px;
 }
 
 .stat-card {
-    background: #1b1b1b;
+    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
     border-radius: 18px;
     padding: 20px;
+    text-align: center;
+    border: 1px solid #2a2a2a;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    border-color: #4CAF50;
 }
 
 .stat-card span {
@@ -292,38 +399,176 @@ button {
 
 .stat-card strong {
     font-size: 22px;
+    color: #fff;
 }
 
-.quote-card {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 15px;
-    background: #1b1b1b;
-    padding: 20px;
+.stat-card strong#posicaoAtual {
+    color: #4CAF50;
+}
+
+/* =========================
+   COMPARAÇÃO SEMANAL
+========================= */
+
+.comparacao-semanal {
+    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
     border-radius: 18px;
+    padding: 25px;
+    margin-top: 15px;
+    border: 1px solid #2a2a2a;
+    transition: all 0.3s ease;
 }
 
-.quote-card span {
-    font-size: 25px;
+.comparacao-semanal:hover {
+    border-color: #4CAF50;
 }
 
-.quote-card p {
+.comparacao-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.comparacao-item {
+    text-align: center;
+    flex: 1;
+    min-width: 80px;
+}
+
+.comparacao-item .label {
+    color: #888;
+    font-size: 13px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.comparacao-item .valor {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.comparacao-item .valor.anterior {
     color: #aaa;
 }
 
+.comparacao-item .valor.atual {
+    color: #4CAF50;
+}
+
+.comparacao-vs {
+    font-size: 20px;
+    color: #555;
+    padding: 0 10px;
+}
+
+.comparacao-resultado {
+    text-align: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #292929;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.comparacao-resultado.positivo {
+    color: #7ee787;
+}
+
+.comparacao-resultado.negativo {
+    color: #ff7676;
+}
+
+.comparacao-resultado.neutro {
+    color: #ffd93d;
+}
+
+.comparacao-info {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #555;
+}
+
+/* =========================
+   RANKING
+========================= */
+
 .page-title {
     margin-bottom: 25px;
+}
+
+.page-title h2 {
+    font-size: 28px;
 }
 
 .page-title p {
     color: #888;
 }
 
-.history-card {
-    background: #1b1b1b;
+.ranking-card {
+    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
     border-radius: 20px;
     overflow: hidden;
+    border: 1px solid #2a2a2a;
+}
+
+.ranking-header,
+.ranking-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 100px;
+    align-items: center;
+    padding: 18px 20px;
+}
+
+.ranking-header {
+    color: #777;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #303030;
+    background: #131313;
+}
+
+.ranking-row {
+    border-bottom: 1px solid #292929;
+    transition: all 0.3s ease;
+}
+
+.ranking-row:hover {
+    background: #222;
+}
+
+.ranking-row:last-child {
+    border-bottom: none;
+}
+
+.ranking-position {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.ranking-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.ranking-time {
+    text-align: right;
+    color: #aaa;
+    font-weight: bold;
+}
+
+/* =========================
+   HISTÓRICO
+========================= */
+
+.history-card {
+    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid #2a2a2a;
 }
 
 .history-row {
@@ -331,6 +576,11 @@ button {
     justify-content: space-between;
     padding: 18px 20px;
     border-bottom: 1px solid #292929;
+    transition: all 0.3s ease;
+}
+
+.history-row:hover {
+    background: #222;
 }
 
 .history-row:last-child {
@@ -343,7 +593,37 @@ button {
 
 .history-time {
     font-weight: bold;
+    color: #4CAF50;
 }
+
+/* =========================
+   QUOTE
+========================= */
+
+.quote-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+    background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
+    padding: 20px;
+    border-radius: 18px;
+    border: 1px solid #2a2a2a;
+}
+
+.quote-card span {
+    font-size: 25px;
+}
+
+.quote-card p {
+    color: #aaa;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+/* =========================
+   RESPONSIVO
+========================= */
 
 @media (max-width: 600px) {
     .auth-box {
@@ -354,6 +634,7 @@ button {
         max-width: 100px;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-size: 14px;
     }
 
     .stats-grid {
@@ -364,11 +645,26 @@ button {
         padding: 30px 15px;
     }
 
+    .ranking-header,
+    .ranking-row {
+        grid-template-columns: 55px 1fr 85px;
+        padding: 16px 12px;
+    }
+
     .timer-buttons {
         flex-direction: column;
     }
 
     .timer-buttons button {
         width: 100%;
+    }
+
+    .comparacao-grid {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .comparacao-vs {
+        padding: 5px 0;
     }
 }
