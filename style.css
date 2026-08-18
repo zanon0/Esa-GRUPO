@@ -4,13 +4,14 @@
 
 body {
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'Segoe UI', Arial, sans-serif;
     background: #101010;
     color: #ffffff;
 }
 
 button,
-input {
+input,
+textarea {
     font-family: inherit;
 }
 
@@ -39,7 +40,6 @@ input {
     padding: 35px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 60px rgba(76, 175, 80, 0.05);
     border: 1px solid rgba(76, 175, 80, 0.1);
-    backdrop-filter: blur(10px);
 }
 
 .logo {
@@ -693,34 +693,38 @@ button {
 }
 
 /* =========================
-   CADERNO - ESTILO ONE NOTE
+   CADERNO - VISUAL MELHORADO
 ========================= */
 
 .caderno-tabs {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 0;
-    overflow-x: auto;
     padding: 0 4px;
     flex-wrap: wrap;
+    background: #131313;
+    border-radius: 16px 16px 0 0;
+    padding: 8px 12px;
+    border: 1px solid #2a2a2a;
+    border-bottom: none;
 }
 
 .caderno-tabs-list {
     display: flex;
     gap: 4px;
     flex-wrap: wrap;
+    flex: 1;
 }
 
 .caderno-tab {
-    padding: 10px 18px;
-    border-radius: 12px 12px 0 0;
-    background: #1a1a1a;
+    padding: 8px 16px;
+    border-radius: 10px 10px 0 0;
+    background: transparent;
     color: #888;
-    border: 1px solid #2a2a2a;
-    border-bottom: none;
+    border: none;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     transition: all 0.3s ease;
     white-space: nowrap;
@@ -734,18 +738,19 @@ button {
 .caderno-tab.active {
     background: #1b1b1b;
     color: #4CAF50;
-    border-color: #4CAF50;
-    box-shadow: 0 -2px 10px rgba(76, 175, 80, 0.1);
+    border: 1px solid #4CAF50;
+    border-bottom: none;
+    box-shadow: 0 -2px 15px rgba(76, 175, 80, 0.15);
 }
 
 .caderno-add-tab {
-    padding: 10px 16px;
-    border-radius: 12px;
+    padding: 8px 14px;
+    border-radius: 10px;
     background: #292929;
     color: #4CAF50;
     border: 1px dashed #4CAF50;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     transition: all 0.3s ease;
     white-space: nowrap;
 }
@@ -753,12 +758,13 @@ button {
 .caderno-add-tab:hover {
     background: #1a3a1a;
     border-color: #4CAF50;
+    transform: scale(1.02);
 }
 
 .caderno-content {
     background: linear-gradient(145deg, #1b1b1b 0%, #151515 100%);
     border-radius: 0 0 18px 18px;
-    padding: 20px;
+    padding: 25px;
     border: 1px solid #2a2a2a;
     border-top: none;
     min-height: 400px;
@@ -788,6 +794,10 @@ button {
     color: #555;
 }
 
+.caderno-titulo:focus {
+    border-bottom: 2px solid #4CAF50;
+}
+
 .caderno-delete {
     background: #2a1a1a;
     color: #ff7676;
@@ -802,27 +812,28 @@ button {
 .caderno-delete:hover {
     background: #3a1a1a;
     border-color: #ff7676;
+    transform: scale(1.05);
 }
 
 .caderno-texto {
     width: 100%;
-    min-height: 300px;
+    min-height: 350px;
     background: #0d0d0d;
     border: 1px solid #2a2a2a;
     border-radius: 12px;
     color: #e0e0e0;
     font-size: 16px;
-    line-height: 1.8;
+    line-height: 1.9;
     padding: 20px;
     resize: vertical;
     outline: none;
-    font-family: 'Courier New', monospace;
+    font-family: 'Segoe UI', Arial, sans-serif;
     transition: all 0.3s ease;
 }
 
 .caderno-texto:focus {
     border-color: #4CAF50;
-    box-shadow: 0 0 30px rgba(76, 175, 80, 0.05);
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.08);
 }
 
 .caderno-texto::placeholder {
@@ -900,14 +911,15 @@ button {
         padding: 5px 0;
     }
 
-    /* CADERNO RESPONSIVO */
     .caderno-tabs {
         flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 6px 10px;
     }
     
     .caderno-tab {
         font-size: 12px;
-        padding: 8px 14px;
+        padding: 6px 12px;
     }
     
     .caderno-titulo {
