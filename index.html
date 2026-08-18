@@ -8,6 +8,10 @@
 </head>
 <body>
 
+    <!-- =========================
+         TELA DE LOGIN
+    ========================== -->
+
     <main id="authScreen" class="auth-screen">
         <div class="auth-box">
             <div class="logo">🧠</div>
@@ -20,33 +24,24 @@
                 <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email">
                 <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
                 <button class="primary-btn" onclick="login()">Entrar</button>
-                <p class="switch-text">Ainda não possui uma conta?</p>
-                <button class="secondary-btn" onclick="mostrarCadastro()">Criar conta</button>
                 <p id="loginMensagem" class="mensagem"></p>
-            </div>
-
-            <!-- CADASTRO -->
-            <div id="cadastroForm" class="hidden">
-                <h2>Criar conta</h2>
-                <input type="text" id="cadNome" placeholder="Seu nome" autocomplete="username">
-                <input type="email" id="cadEmail" placeholder="E-mail" autocomplete="email">
-                <input type="password" id="cadSenha" placeholder="Crie uma senha (mínimo 6 caracteres)" autocomplete="new-password">
-                <button class="primary-btn" onclick="cadastrar()">Cadastrar</button>
-                <p class="switch-text">Já possui uma conta?</p>
-                <button class="secondary-btn" onclick="mostrarLogin()">Voltar para login</button>
-                <p id="cadastroMensagem" class="mensagem"></p>
             </div>
         </div>
     </main>
 
-    <!-- APLICATIVO -->
+    <!-- =========================
+         APLICATIVO
+    ========================== -->
+
     <main id="appScreen" class="app-screen hidden">
+        <!-- HEADER -->
         <header class="topbar">
             <button class="menu-button" onclick="abrirMenu()">☰</button>
             <div class="top-title">MyStudy</div>
             <div class="user-name" id="usuarioNome">Usuário</div>
         </header>
 
+        <!-- MENU LATERAL -->
         <div id="menuOverlay" class="menu-overlay hidden" onclick="fecharMenu()"></div>
         <aside id="sideMenu" class="side-menu">
             <div class="menu-header">
@@ -56,15 +51,25 @@
                     <small id="menuUsuario">Usuário</small>
                 </div>
             </div>
-            <button class="menu-item active" onclick="mostrarPagina('cronometro')">⏳ <span>Cronômetro</span></button>
-            <button class="menu-item" onclick="mostrarPagina('ranking')">👑 <span>Ranking</span></button>
-            <button class="menu-item" onclick="mostrarPagina('historico')">🗓️ <span>Histórico</span></button>
+            <button class="menu-item active" onclick="mostrarPagina('cronometro')">
+                ⏳ <span>Cronômetro</span>
+            </button>
+            <button class="menu-item" onclick="mostrarPagina('ranking')">
+                👑 <span>Ranking</span>
+            </button>
+            <button class="menu-item" onclick="mostrarPagina('historico')">
+                🗓️ <span>Histórico</span>
+            </button>
             <div class="menu-bottom">
-                <button class="menu-item logout" onclick="logout()">🚪 <span>Sair</span></button>
+                <button class="menu-item logout" onclick="logout()">
+                    🚪 <span>Sair</span>
+                </button>
             </div>
         </aside>
 
-        <!-- CRONÔMETRO -->
+        <!-- =========================
+             PÁGINA CRONÔMETRO
+        ========================== -->
         <section id="paginaCronometro" class="page">
             <div class="welcome">
                 <h2>Olá, <span id="nomeWelcome"></span> 👋</h2>
@@ -83,11 +88,23 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card"><span>📆 Hoje</span><strong id="tempoHoje">00:00</strong></div>
-                <div class="stat-card"><span>📊 Esta semana</span><strong id="tempoSemana">00:00</strong></div>
-                <div class="stat-card"><span>🎯 Posição</span><strong id="posicaoAtual">-</strong></div>
+                <div class="stat-card">
+                    <span>📆 Hoje</span>
+                    <strong id="tempoHoje">00:00</strong>
+                </div>
+                <div class="stat-card">
+                    <span>📊 Esta semana</span>
+                    <strong id="tempoSemana">00:00</strong>
+                </div>
+                <div class="stat-card">
+                    <span>🎯 Posição</span>
+                    <strong id="posicaoAtual">-</strong>
+                </div>
             </div>
 
+            <!-- =========================
+                 COMPARAÇÃO SEMANAL
+            ========================== -->
             <div id="comparacaoSemanal"></div>
 
             <div class="quote-card">
@@ -96,19 +113,27 @@
             </div>
         </section>
 
-        <!-- RANKING -->
+        <!-- =========================
+             PÁGINA RANKING
+        ========================== -->
         <section id="paginaRanking" class="page hidden">
             <div class="page-title">
                 <h2>👑 Ranking semanal</h2>
                 <p>Quem estudou mais esta semana?</p>
             </div>
             <div class="ranking-card">
-                <div class="ranking-header"><span>🏅 Posição</span><span>👤 Estudante</span><span>⏱️ Tempo</span></div>
+                <div class="ranking-header">
+                    <span>🏅 Posição</span>
+                    <span>👤 Estudante</span>
+                    <span>⏱️ Tempo</span>
+                </div>
                 <div id="listaRanking"></div>
             </div>
         </section>
 
-        <!-- HISTÓRICO -->
+        <!-- =========================
+             HISTÓRICO
+        ========================== -->
         <section id="paginaHistorico" class="page hidden">
             <div class="page-title">
                 <h2>🗓️ Histórico</h2>
@@ -118,9 +143,11 @@
         </section>
     </main>
 
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
     <script src="script.js"></script>
 </body>
 </html>
