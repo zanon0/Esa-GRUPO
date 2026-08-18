@@ -283,9 +283,13 @@ async function carregarRanking() {
     }
 }
 
+// ✅ FUNÇÃO CORRIGIDA DO RANKING
 function atualizarRanking() {
     const lista = document.getElementById("listaRanking");
-    if (!lista) return;
+    if (!lista) {
+        console.error("❌ Elemento 'listaRanking' não encontrado!");
+        return;
+    }
 
     lista.innerHTML = "";
 
@@ -302,4 +306,245 @@ function atualizarRanking() {
 
     rankingAtual.forEach((jogador, index) => {
         const linha = document.createElement("div");
-        linha
+        linha.className = "ranking-row";
+
+        // 🔥 CORES PARA TOP 3
+        if (index === 0) {
+            linha.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, transparent 100%)";
+            linha.style.borderLeft = "3px solid #FFD700";
+        } else if (index === 1) {
+            linha.style.background = "linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, transparent 100%)";
+            linha.style.borderLeft = "3px solid #C0C0C0";
+        } else if (index === 2) {
+            linha.style.background = "linear-gradient(135deg, rgba(205, 127, 50, 0.2) 0%, transparent 100%)";
+            linha.style.borderLeft = "3px solid #CD7F32";
+        }
+
+        // 🔥 DESTACA O USUÁRIO ATUAL
+        if (usuarioAtual && jogador.uid === usuarioAtual.uid) {
+            linha.style.background = "linear-gradient(135deg, rgba(76, 175, 80, 0.25) 0%, rgba(76, 175, 80, 0.05) 100%)";
+            linha.style.borderLeft = "3px solid #4CAF50";
+            linha.style.boxShadow = "0 0 30px rgba(76, 175, 80, 0.1)";
+        }
+
+        const nome = jogador.nome || jogador.uid || "Anônimo";
+
+        linha.innerHTML = `
+            <div class="ranking-position">${obterMedalha(index)}</div>
+            <div class="ranking-name">${escaparHTML(nome)}</div>
+            <div class="ranking-time">${formatarTempo(jogador.tempo || 0)}</div>
+        `;
+
+        lista.appendChild(linha);
+    });
+
+    atualizarPosicao();
+}
+
+function obterMedalha(posicao) {
+    if (posicao === 0) return "🥇";
+    if (posicao === 1) return "🥈";
+    if (posicao === 2) return "🥉";
+    return `${posicao + 1}º`;
+}
+
+function formatarTempo(segundos) {
+    const horas = Math.floor(segundos / 3600);
+    const minutos = Math.floor((segundos % 3600) / 60);
+    if (horas > 0) return `${horas}h ${String(minutos).padStart(2, "0")}min`;
+    return `${minutos}min`;
+}
+
+function formatarTempoCompleto(segundos) {
+    const h = Math.floor(segundos / 3600);
+    const m = Math.floor((segundos % 3600) / 60);
+    const s = segundos % 60;
+    if (h > 0) return `${h}h ${m}min ${s}s`;
+    if (m > 0) return `${m}min ${s}s`;
+    return `${s}s`;
+}
+
+function atualizarPosicao() {
+    if (!usuarioAtual) return;
+    const posicao = rankingAtual.findIndex(r => r.uid === usuarioAtual.uid);
+    const elemento = document.getElementById("posicaoAtual");
+    if (posicao === -1 || rankingAtual.length === 0) {
+        elemento.innerText = "-";
+    } else {
+        elemento.innerText = `${posicao + 1}º`;
+    }
+}
+
+// =====================================
+// HISTÓRICO
+// =====================================
+
+async function carregarHistorico() {
+    if (!usuarioAtual) return;
+    try {
+        const snapshot = await db.collection("historico").where("uid", "==", usuarioAtual.uid).get();
+        const historico = [];
+        snapshot.forEach(doc => { historico.push({ id: doc.id, ...doc.data() }); });
+        historico.sort((a, b) => {
+            if (a.timestamp && b.timestamp) return b.timestamp - a.timestamp;
+            return 0;
+        });
+        atualizarHistorico(historico.slice(0, 50));
+    } catch (error) {
+        console.error("Erro ao carregar histórico:", error);
+    }
+}
+
+function atualizarHistorico(historico) {
+    const lista = document.getElementById("listaHistorico");
+    if (!lista) return;
+    lista.innerHTML = "";
+    if (!historico || historico.length === 0) {
+        lista.innerHTML = `<div class="history-row"><span class="history-date">📭 Nenhuma sessão registrada.</span></div>`;
+        return;
+    }
+    historico.forEach((sessao, index) => {
+        const div = document.createElement("div");
+        div.className = "history-row";
+        if (index === 0) { div.style.background = "#292929"; div.style.borderLeft = "3px solid #4CAF50"; }
+        div.innerHTML = `
+            <span class="history-date">${sessao.data || 'Data não disponível'}</span>
+            <span class="history-time">${formatarTempoCompleto(sessao.tempo || 0)}</span>
+        `;
+        lista.appendChild(div);
+    });
+}
+
+// =====================================
+// COMPARAÇÃO SEMANAL
+// =====================================
+
+async function carregarComparacaoSemanal() {
+    if (!usuarioAtual) return;
+    try {
+        const semanaPassada = obterSemanaAnterior();
+        const semanaAtualStr = obterSemanaAtual();
+
+        const snapshotAtual = await db.collection("ranking").where("uid", "==", usuarioAtual.uid).where("semana", "==", semanaAtualStr).get();
+        let tempoAtual = 0;
+        snapshotAtual.forEach(doc => { tempoAtual = doc.data().tempo || 0; });
+
+        const snapshotAnterior = await db.collection("ranking").where("uid", "==", usuarioAtual.uid).where("semana", "==", semanaPassada).get();
+        let tempoAnterior = 0;
+        snapshotAnterior.forEach(doc => { tempoAnterior = doc.data().tempo || 0; });
+
+        semanaAtualTotal = tempoAtual;
+        semanaAnteriorTotal = tempoAnterior;
+
+        let comparacao = "";
+        if (tempoAnterior === 0 && tempoAtual === 0) {
+            comparacao = "📊 Comece a estudar esta semana!";
+        } else if (tempoAnterior === 0 && tempoAtual > 0) {
+            comparacao = "🚀 Primeira semana! Continue assim!";
+        } else if (tempoAtual > tempoAnterior) {
+            const aumento = ((tempoAtual - tempoAnterior) / tempoAnterior) * 100;
+            comparacao = `📈 ${Math.round(aumento)}% a mais que semana passada! 🎉`;
+        } else if (tempoAtual < tempoAnterior) {
+            const queda = ((tempoAnterior - tempoAtual) / tempoAnterior) * 100;
+            comparacao = `📉 ${Math.round(queda)}% a menos que semana passada. Bora recuperar! 💪`;
+        } else {
+            comparacao = "⚖️ Mesmo tempo da semana passada!";
+        }
+
+        const comparacaoElement = document.getElementById("comparacaoSemanal");
+        if (comparacaoElement) {
+            comparacaoElement.innerHTML = `
+                <div class="comparacao-semanal">
+                    <div class="comparacao-grid">
+                        <div class="comparacao-item">
+                            <span class="label">Semana passada</span>
+                            <span class="valor anterior">${formatarTempo(tempoAnterior)}</span>
+                        </div>
+                        <div class="comparacao-vs">vs</div>
+                        <div class="comparacao-item">
+                            <span class="label">Esta semana</span>
+                            <span class="valor atual">${formatarTempo(tempoAtual)}</span>
+                        </div>
+                    </div>
+                    <div class="comparacao-resultado ${tempoAtual >= tempoAnterior ? 'positivo' : 'negativo'}">${comparacao}</div>
+                    <div class="comparacao-info">⏰ Reset automático todo domingo às 23:59</div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error("Erro ao carregar comparação:", error);
+    }
+}
+
+// =====================================
+// RESET SEMANAL
+// =====================================
+
+function verificarResetSemanal() {
+    const agora = new Date();
+    const diaSemana = agora.getDay();
+    const hora = agora.getHours();
+    const minutos = agora.getMinutes();
+    if (diaSemana === 0 && hora === 23 && minutos === 59) {
+        resetarRankingSemanal();
+    }
+}
+
+async function resetarRankingSemanal() {
+    try {
+        const snapshot = await db.collection("ranking").where("semana", "==", semanaAtual).get();
+        const batch = db.batch();
+        const promessas = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            promessas.push(db.collection("historico_semanal").add({
+                uid: data.uid, nome: data.nome, tempo: data.tempo || 0,
+                semana: semanaAtual, dataSalvo: firebase.firestore.FieldValue.serverTimestamp()
+            }));
+            batch.update(doc.ref, { tempo: 0, semana: obterSemanaAtual(), ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp() });
+        });
+        await Promise.all(promessas);
+        await batch.commit();
+        await carregarRanking();
+        await carregarComparacaoSemanal();
+        alert(`📊 SEMANA FINALIZADA!\n\nVocê estudou ${formatarTempo(semanaAtualTotal)} esta semana!\nSemana passada: ${formatarTempo(semanaAnteriorTotal)}\n\nNovo ranking começou! Bora estudar! 💪`);
+        location.reload();
+    } catch (error) {
+        console.error("Erro ao resetar ranking:", error);
+    }
+}
+
+// =====================================
+// ESTATÍSTICAS
+// =====================================
+
+async function carregarTempoHoje() {
+    if (!usuarioAtual) return;
+    try {
+        const hoje = new Date().toLocaleDateString("pt-BR");
+        const snapshot = await db.collection("historico").where("uid", "==", usuarioAtual.uid).where("data", "==", hoje).get();
+        let total = 0;
+        snapshot.forEach(doc => { total += doc.data().tempo || 0; });
+        document.getElementById("tempoHoje").innerText = formatarTempo(total);
+    } catch (error) {
+        console.error("Erro ao carregar tempo de hoje:", error);
+    }
+}
+
+function atualizarInterface() {
+    if (!usuarioAtual) return;
+    const meuRanking = rankingAtual.find(r => r.uid === usuarioAtual.uid);
+    if (meuRanking) {
+        document.getElementById("tempoSemana").innerText = formatarTempo(meuRanking.tempo || 0);
+    }
+    atualizarPosicao();
+}
+
+// =====================================
+// UTILITÁRIOS
+// =====================================
+
+function obterSemanaAtual() {
+    const data = new Date();
+    const primeiroDia = new Date(data.getFullYear(), 0, 1);
+    
