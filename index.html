@@ -7,36 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- =========================
-     PÁGINA CADERNO
-========================== -->
-<section id="paginaCaderno" class="page hidden">
-    <div class="page-title">
-        <h2>📓 Meu Caderno</h2>
-        <p>Organize suas anotações por matéria.</p>
-    </div>
 
-    <!-- ABAS -->
-    <div class="caderno-tabs">
-        <div id="listaAbas" class="caderno-tabs-list">
-            <!-- As abas serão geradas aqui -->
-        </div>
-        <button class="caderno-add-tab" onclick="criarNovaAba()">+ Nova</button>
-    </div>
-
-    <!-- CONTEÚDO -->
-    <div class="caderno-content">
-        <div class="caderno-header">
-            <input type="text" id="cadernoTitulo" class="caderno-titulo" placeholder="Título da matéria" onchange="renomearAba(this.value)">
-            <button class="caderno-delete" onclick="excluirAba()">🗑️ Excluir</button>
-        </div>
-        <textarea id="cadernoTexto" class="caderno-texto" placeholder="Comece a escrever suas anotações..." oninput="salvarAnotacao()"></textarea>
-        <div class="caderno-info">
-            <span id="cadernoStats">0 palavras</span>
-            <span id="cadernoSalvo">💾 Salvo automaticamente</span>
-        </div>
-    </div>
-</section>
     <!-- =========================
          TELA DE LOGIN
     ========================== -->
@@ -88,6 +59,9 @@
             </button>
             <button class="menu-item" onclick="mostrarPagina('historico')">
                 🗓️ <span>Histórico</span>
+            </button>
+            <button class="menu-item" onclick="mostrarPagina('caderno')">
+                📓 <span>Caderno</span>
             </button>
             <div class="menu-bottom">
                 <button class="menu-item logout" onclick="logout()">
@@ -167,6 +141,37 @@
                 <p>Suas sessões de estudo.</p>
             </div>
             <div id="listaHistorico" class="history-card"></div>
+        </section>
+
+        <!-- =========================
+             PÁGINA CADERNO
+        ========================== -->
+        <section id="paginaCaderno" class="page hidden">
+            <div class="page-title">
+                <h2>📓 Meu Caderno</h2>
+                <p>Organize suas anotações por matéria.</p>
+            </div>
+
+            <!-- ABAS -->
+            <div class="caderno-tabs">
+                <div id="listaAbas" class="caderno-tabs-list">
+                    <!-- As abas serão geradas aqui -->
+                </div>
+                <button class="caderno-add-tab" onclick="criarNovaAba()">➕ Nova</button>
+            </div>
+
+            <!-- CONTEÚDO -->
+            <div class="caderno-content">
+                <div class="caderno-header">
+                    <input type="text" id="cadernoTitulo" class="caderno-titulo" placeholder="Título da matéria" onchange="renomearAba(this.value)">
+                    <button class="caderno-delete" onclick="excluirAba()">🗑️ Excluir</button>
+                </div>
+                <textarea id="cadernoTexto" class="caderno-texto" placeholder="Comece a escrever suas anotações..." oninput="salvarAnotacaoDebounce()"></textarea>
+                <div class="caderno-info">
+                    <span id="cadernoStats">0 palavras</span>
+                    <span id="cadernoSalvo">💾 Salvo automaticamente</span>
+                </div>
+            </div>
         </section>
     </main>
 
