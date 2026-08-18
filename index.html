@@ -24,21 +24,7 @@
                 <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email">
                 <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
                 <button class="primary-btn" onclick="login()">Entrar</button>
-                <p class="switch-text">Ainda não possui uma conta?</p>
-                <button class="secondary-btn" onclick="mostrarCadastro()">Criar conta</button>
                 <p id="loginMensagem" class="mensagem"></p>
-            </div>
-
-            <!-- CADASTRO -->
-            <div id="cadastroForm" class="hidden">
-                <h2>Criar conta</h2>
-                <input type="text" id="cadNome" placeholder="Seu nome" autocomplete="username">
-                <input type="email" id="cadEmail" placeholder="E-mail" autocomplete="email">
-                <input type="password" id="cadSenha" placeholder="Crie uma senha (mínimo 6 caracteres)" autocomplete="new-password">
-                <button class="primary-btn" onclick="cadastrar()">Cadastrar</button>
-                <p class="switch-text">Já possui uma conta?</p>
-                <button class="secondary-btn" onclick="mostrarLogin()">Voltar para login</button>
-                <p id="cadastroMensagem" class="mensagem"></p>
             </div>
         </div>
     </main>
@@ -67,9 +53,6 @@
             </div>
             <button class="menu-item active" onclick="mostrarPagina('cronometro')">
                 ⏱️ <span>Cronômetro</span>
-            </button>
-            <button class="menu-item" onclick="mostrarPagina('ranking')">
-                🏆 <span>Ranking</span>
             </button>
             <button class="menu-item" onclick="mostrarPagina('historico')">
                 📅 <span>Histórico</span>
@@ -107,36 +90,14 @@
                     <strong id="tempoHoje">00:00</strong>
                 </div>
                 <div class="stat-card">
-                    <span>Esta semana</span>
-                    <strong id="tempoSemana">00:00</strong>
-                </div>
-                <div class="stat-card">
-                    <span>Posição</span>
-                    <strong id="posicaoAtual">-</strong>
+                    <span>Total</span>
+                    <strong id="tempoTotal">00:00</strong>
                 </div>
             </div>
 
             <div class="quote-card">
                 <span>💡</span>
                 <p>Não minta para você mesmo. O objetivo aqui é criar disciplina e hábito de estudar.</p>
-            </div>
-        </section>
-
-        <!-- =========================
-             PÁGINA RANKING
-        ========================== -->
-        <section id="paginaRanking" class="page hidden">
-            <div class="page-title">
-                <h2>🏆 Ranking semanal</h2>
-                <p>Quem estudou mais esta semana?</p>
-            </div>
-            <div class="ranking-card">
-                <div class="ranking-header">
-                    <span>Posição</span>
-                    <span>Estudante</span>
-                    <span>Tempo</span>
-                </div>
-                <div id="listaRanking"></div>
             </div>
         </section>
 
