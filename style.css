@@ -506,7 +506,7 @@ button {
 }
 
 /* =========================
-   RANKING - CORRIGIDO
+   RANKING - CORRIGIDO E ALINHADO
 ========================= */
 
 .page-title {
@@ -528,7 +528,6 @@ button {
     border: 1px solid #2a2a2a;
 }
 
-/* HEADER DO RANKING */
 .ranking-header {
     display: grid;
     grid-template-columns: 70px 1fr 100px;
@@ -542,7 +541,6 @@ button {
     letter-spacing: 1px;
 }
 
-/* LINHAS DO RANKING */
 .ranking-row {
     display: grid;
     grid-template-columns: 70px 1fr 100px;
@@ -560,7 +558,6 @@ button {
     background: #222;
 }
 
-/* COLUNAS */
 .col-posicao {
     text-align: center;
     font-weight: bold;
@@ -615,7 +612,6 @@ button {
     box-shadow: 0 0 30px rgba(76, 175, 80, 0.05);
 }
 
-/* POSIÇÃO (MEDALHA OU NÚMERO) */
 .ranking-position {
     font-weight: bold;
     font-size: 20px;
@@ -634,6 +630,7 @@ button {
     font-weight: bold;
     color: #aaa;
 }
+
 /* =========================
    HISTÓRICO
 ========================= */
@@ -722,7 +719,7 @@ button {
     .ranking-header,
     .ranking-row {
         grid-template-columns: 55px 1fr 85px;
-        padding: 16px 12px;
+        padding: 12px 15px;
     }
 
     .ranking-position {
