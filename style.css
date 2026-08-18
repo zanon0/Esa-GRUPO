@@ -14,16 +14,10 @@ input {
     font-family: inherit;
 }
 
-/* =========================
-   UTILIDADES
-========================= */
 .hidden {
     display: none !important;
 }
 
-/* =========================
-   LOGIN
-========================= */
 .auth-screen {
     min-height: 100vh;
     display: flex;
@@ -94,18 +88,6 @@ button {
     font-weight: bold;
 }
 
-.secondary-btn {
-    width: 100%;
-    background: #292929;
-    color: white;
-}
-
-.switch-text {
-    color: #888;
-    text-align: center;
-    margin: 20px 0 10px;
-}
-
 .mensagem {
     text-align: center;
     min-height: 20px;
@@ -113,9 +95,6 @@ button {
     margin-top: 15px;
 }
 
-/* =========================
-   APLICATIVO
-========================= */
 .app-screen {
     min-height: 100vh;
 }
@@ -150,9 +129,6 @@ button {
     color: #aaa;
 }
 
-/* =========================
-   MENU
-========================= */
 .side-menu {
     position: fixed;
     left: -280px;
@@ -227,9 +203,6 @@ button {
     color: #ff7777;
 }
 
-/* =========================
-   PÁGINAS
-========================= */
 .page {
     max-width: 900px;
     margin: auto;
@@ -244,9 +217,6 @@ button {
     color: #888;
 }
 
-/* =========================
-   CRONÔMETRO
-========================= */
 .timer-card {
     background: #1b1b1b;
     border-radius: 25px;
@@ -300,12 +270,9 @@ button {
     color: #ff7777;
 }
 
-/* =========================
-   ESTATÍSTICAS
-========================= */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
     margin-top: 15px;
 }
@@ -327,9 +294,6 @@ button {
     font-size: 22px;
 }
 
-/* =========================
-   FRASE
-========================= */
 .quote-card {
     display: flex;
     align-items: center;
@@ -348,9 +312,6 @@ button {
     color: #aaa;
 }
 
-/* =========================
-   RANKING
-========================= */
 .page-title {
     margin-bottom: 25px;
 }
@@ -359,50 +320,6 @@ button {
     color: #888;
 }
 
-.ranking-card {
-    background: #1b1b1b;
-    border-radius: 20px;
-    overflow: hidden;
-}
-
-.ranking-header,
-.ranking-row {
-    display: grid;
-    grid-template-columns: 80px 1fr 100px;
-    align-items: center;
-    padding: 18px 20px;
-}
-
-.ranking-header {
-    color: #777;
-    font-size: 13px;
-    border-bottom: 1px solid #303030;
-}
-
-.ranking-row {
-    border-bottom: 1px solid #292929;
-}
-
-.ranking-row:last-child {
-    border-bottom: none;
-}
-
-.ranking-position {
-    font-weight: bold;
-}
-
-.ranking-name {
-    font-weight: bold;
-}
-
-.ranking-time {
-    text-align: right;
-    color: #aaa;
-}
-
-/* =========================
-   HISTÓRICO
-========================= */
 .history-card {
     background: #1b1b1b;
     border-radius: 20px;
@@ -428,9 +345,6 @@ button {
     font-weight: bold;
 }
 
-/* =========================
-   CELULAR
-========================= */
 @media (max-width: 600px) {
     .auth-box {
         padding: 25px;
@@ -448,12 +362,6 @@ button {
 
     .timer-card {
         padding: 30px 15px;
-    }
-
-    .ranking-header,
-    .ranking-row {
-        grid-template-columns: 55px 1fr 85px;
-        padding: 16px 12px;
     }
 
     .timer-buttons {
