@@ -1,5 +1,5 @@
 /* =====================================
-   MYSTUDY - Versão Firebase
+   MYSTUDY - Versão Firebase (CORRIGIDA)
 ===================================== */
 
 const firebaseConfig = {
@@ -29,6 +29,7 @@ let semanaAtual = '';
 let tempoEnviadoFirebase = 0;
 let semanaAnteriorTotal = 0;
 let semanaAtualTotal = 0;
+let unsubscribeRanking = null; // para listener em tempo real
 
 // =====================================
 // INICIALIZAÇÃO
@@ -40,11 +41,24 @@ document.addEventListener("DOMContentLoaded", () => {
             await carregarDadosUsuario(user);
             abrirAplicativo();
         } else {
+            if (unsubscribeRanking) {
+                unsubscribeRanking();
+                unsubscribeRanking = null;
+            }
             document.getElementById("authScreen").classList.remove("hidden");
             document.getElementById("appScreen").classList.add("hidden");
         }
     });
-    setInterval(verificarResetSemanal, 60000);
+
+    // Verifica a cada 5 minutos se a semana mudou (fallback)
+    setInterval(verificarMudancaSemana, 300000);
+
+    // Salvar anotação ao sair da página
+    window.addEventListener('beforeunload', (e) => {
+        if (abaAtualId && usuarioAtual) {
+            salvarAnotacao(); // tenta salvar imediatamente
+        }
+    });
 });
 
 // =====================================
@@ -69,7 +83,16 @@ async function login() {
         mensagem.innerText = "Login realizado!";
         mensagem.style.color = "#7ee787";
     } catch (error) {
-        mensagem.innerText = "E-mail ou senha incorretos.";
+        console.error("Erro no login:", error);
+        let msg = "Erro ao fazer login.";
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            msg = "E-mail ou senha incorretos.";
+        } else if (error.code === 'auth/invalid-email') {
+            msg = "E-mail inválido.";
+        } else if (error.code === 'auth/too-many-requests') {
+            msg = "Muitas tentativas. Tente novamente mais tarde.";
+        }
+        mensagem.innerText = msg;
         mensagem.style.color = "#ff7676";
     }
 }
@@ -91,23 +114,32 @@ async function carregarDadosUsuario(user) {
                 email: user.email,
                 criadoEm: firebase.firestore.FieldValue.serverTimestamp()
             });
+            // Cria documento no ranking com semana atual
             await db.collection("ranking").doc(user.uid).set({
                 uid: user.uid,
                 nome: nome,
                 tempo: 0,
-                semana: obterSemanaAtual()
+                semana: obterSemanaAtual(),
+                ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
             });
             usuarioAtual = { uid: user.uid, nome: nome, email: user.email };
         }
 
-        semanaAtual = obterSemanaAtual();
-        await carregarRanking();
+        semanaAtual = obterSemanaAtual(); // atualiza a semana atual
+
+        // Verifica se a semana do ranking é diferente (reset automático)
+        await verificarMudancaSemana();
+
+        // Configura listener em tempo real para o ranking
+        configurarListenerRanking();
+
         await carregarHistorico();
         await carregarTempoHoje();
         await carregarComparacaoSemanal();
 
     } catch (error) {
         console.error("Erro ao carregar dados:", error);
+        alert("Erro ao carregar seus dados. Tente recarregar a página.");
     }
 }
 
@@ -134,16 +166,22 @@ async function logout() {
         return;
     }
     try {
+        if (unsubscribeRanking) {
+            unsubscribeRanking();
+            unsubscribeRanking = null;
+        }
         await auth.signOut();
         usuarioAtual = null;
         if (intervalo) { clearInterval(intervalo); intervalo = null; }
         segundosSessao = 0;
         estudando = false;
+        rankingAtual = [];
         document.getElementById("appScreen").classList.add("hidden");
         document.getElementById("authScreen").classList.remove("hidden");
         document.getElementById("timer").innerText = "00:00:00";
-        document.getElementById("statusTimer").innerText = "Pronto para estudar";
+        document.getElementById("statusTimer").innerText = "✅ Pronto para estudar";
         document.getElementById("startButton").innerText = "▶ Iniciar";
+        document.getElementById("startButton").style.background = "#4CAF50";
     } catch (error) {
         console.error("Erro ao sair:", error);
     }
@@ -179,7 +217,8 @@ function mostrarPagina(pagina) {
         carregarComparacaoSemanal();
     } else if (pagina === "ranking") {
         document.getElementById("paginaRanking").classList.remove("hidden");
-        carregarRanking();
+        // O listener já está ativo, apenas atualiza a interface
+        atualizarRanking();
     } else if (pagina === "historico") {
         document.getElementById("paginaHistorico").classList.remove("hidden");
         carregarHistorico();
@@ -194,15 +233,31 @@ function mostrarPagina(pagina) {
 // =====================================
 
 function iniciar() {
-    if (!usuarioAtual || estudando) return;
-    estudando = true;
+    if (!usuarioAtual) {
+        console.log("❌ Faça login primeiro!");
+        return;
+    }
+    
+    if (estudando) {
+        console.log("⏳ Já está estudando!");
+        return;
+    }
+
     tempoEnviadoFirebase = 0;
-    document.getElementById("statusTimer").innerText = "Estudando agora...";
+    estudando = true;
+    document.getElementById("statusTimer").innerText = "🎯 Estudando agora...";
     document.getElementById("startButton").innerText = "● Estudando";
+    document.getElementById("startButton").style.background = "#4CAF50";
+
+    if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+    }
 
     intervalo = setInterval(async () => {
         segundosSessao++;
         atualizarTimer();
+
         const diff = segundosSessao - tempoEnviadoFirebase;
         if (diff >= 5) {
             await atualizarTempoFirebase(diff);
@@ -212,22 +267,39 @@ function iniciar() {
 }
 
 function pausar() {
-    if (!estudando) return;
-    clearInterval(intervalo);
-    intervalo = null;
+    if (!estudando) {
+        console.log("⏸️ Não há estudo para pausar");
+        return;
+    }
+
+    if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+    }
+    
     estudando = false;
-    document.getElementById("statusTimer").innerText = "Estudo pausado";
+    document.getElementById("statusTimer").innerText = "⏸️ Estudo pausado";
     document.getElementById("startButton").innerText = "▶ Continuar";
+    document.getElementById("startButton").style.background = "#FFA500";
 }
 
 async function encerrar() {
-    if (!usuarioAtual) return;
-    clearInterval(intervalo);
-    intervalo = null;
+    if (!usuarioAtual) {
+        console.log("❌ Usuário não logado");
+        return;
+    }
+
+    if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+    }
 
     if (segundosSessao > 0) {
         const diff = segundosSessao - tempoEnviadoFirebase;
-        if (diff > 0) { await atualizarTempoFirebase(diff); }
+        if (diff > 0) {
+            await atualizarTempoFirebase(diff);
+        }
+
         try {
             await db.collection("historico").add({
                 uid: usuarioAtual.uid,
@@ -236,20 +308,28 @@ async function encerrar() {
                 data: new Date().toLocaleDateString("pt-BR"),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            await carregarRanking();
+
+            console.log("✅ Sessão salva:", segundosSessao, "segundos");
             await carregarHistorico();
             await carregarTempoHoje();
             await carregarComparacaoSemanal();
+
         } catch (error) {
-            console.error("Erro ao salvar sessão:", error);
+            console.error("❌ Erro ao salvar sessão:", error);
         }
     }
+
     segundosSessao = 0;
+    tempoEnviadoFirebase = 0;
     estudando = false;
-    document.getElementById("statusTimer").innerText = "Sessão encerrada";
+
+    document.getElementById("statusTimer").innerText = "✅ Pronto para estudar";
     document.getElementById("startButton").innerText = "▶ Iniciar";
+    document.getElementById("startButton").style.background = "#4CAF50";
     atualizarTimer();
     atualizarInterface();
+
+    console.log("🛑 Sessão encerrada!");
 }
 
 function atualizarTimer() {
@@ -262,7 +342,7 @@ function atualizarTimer() {
 function formatar(numero) { return String(numero).padStart(2, "0"); }
 
 // =====================================
-// RANKING
+// ATUALIZAR TEMPO NO FIREBASE (com reset semanal automático)
 // =====================================
 
 async function atualizarTempoFirebase(tempoAdicional) {
@@ -270,32 +350,93 @@ async function atualizarTempoFirebase(tempoAdicional) {
     try {
         const docRef = db.collection("ranking").doc(usuarioAtual.uid);
         const doc = await docRef.get();
+        const semanaAtual = obterSemanaAtual(); // sempre calcula a semana atual
+
         if (doc.exists) {
             const data = doc.data();
             if (data.semana !== semanaAtual) {
-                await docRef.update({ tempo: tempoAdicional, semana: semanaAtual, ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp() });
+                // Nova semana: zera o tempo e atualiza a semana
+                await docRef.update({
+                    tempo: tempoAdicional,
+                    semana: semanaAtual,
+                    ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+                });
             } else {
-                await docRef.update({ tempo: firebase.firestore.FieldValue.increment(tempoAdicional), ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp() });
+                // Mesma semana: incrementa
+                await docRef.update({
+                    tempo: firebase.firestore.FieldValue.increment(tempoAdicional),
+                    ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+                });
             }
         } else {
-            await docRef.set({ uid: usuarioAtual.uid, nome: usuarioAtual.nome, tempo: tempoAdicional, semana: semanaAtual, ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp() });
+            // Documento não existe, cria
+            await docRef.set({
+                uid: usuarioAtual.uid,
+                nome: usuarioAtual.nome,
+                tempo: tempoAdicional,
+                semana: semanaAtual,
+                ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+            });
         }
     } catch (error) {
         console.error("Erro ao atualizar ranking:", error);
     }
 }
 
-async function carregarRanking() {
+// =====================================
+// VERIFICA MUDANÇA DE SEMANA (reset automático)
+// =====================================
+
+async function verificarMudancaSemana() {
+    if (!usuarioAtual) return;
     try {
-        const snapshot = await db.collection("ranking").where("semana", "==", semanaAtual).get();
-        rankingAtual = [];
-        snapshot.forEach(doc => { rankingAtual.push({ id: doc.id, ...doc.data() }); });
-        rankingAtual.sort((a, b) => b.tempo - a.tempo);
-        atualizarRanking();
+        const semanaAtual = obterSemanaAtual();
+        const docRef = db.collection("ranking").doc(usuarioAtual.uid);
+        const doc = await docRef.get();
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.semana !== semanaAtual) {
+                // A semana mudou: zera o tempo
+                await docRef.update({
+                    tempo: 0,
+                    semana: semanaAtual,
+                    ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log("🔄 Ranking zerado para nova semana:", semanaAtual);
+                // Recarrega dados após reset
+                await carregarComparacaoSemanal();
+            }
+        }
     } catch (error) {
-        console.error("Erro ao carregar ranking:", error);
+        console.error("Erro ao verificar mudança de semana:", error);
     }
 }
+
+// =====================================
+// LISTENER EM TEMPO REAL DO RANKING
+// =====================================
+
+function configurarListenerRanking() {
+    if (unsubscribeRanking) {
+        unsubscribeRanking();
+    }
+    unsubscribeRanking = db.collection("ranking")
+        .where("semana", "==", obterSemanaAtual())
+        .onSnapshot((snapshot) => {
+            rankingAtual = [];
+            snapshot.forEach(doc => {
+                rankingAtual.push({ id: doc.id, ...doc.data() });
+            });
+            rankingAtual.sort((a, b) => b.tempo - a.tempo);
+            atualizarRanking();
+        }, (error) => {
+            console.error("Erro no listener do ranking:", error);
+        });
+}
+
+// =====================================
+// RANKING (interface)
+// =====================================
 
 function atualizarRanking() {
     const lista = document.getElementById("listaRanking");
@@ -387,14 +528,14 @@ function atualizarPosicao() {
 async function carregarHistorico() {
     if (!usuarioAtual) return;
     try {
-        const snapshot = await db.collection("historico").where("uid", "==", usuarioAtual.uid).get();
+        const snapshot = await db.collection("historico")
+            .where("uid", "==", usuarioAtual.uid)
+            .orderBy("timestamp", "desc")
+            .limit(50)
+            .get();
         const historico = [];
         snapshot.forEach(doc => { historico.push({ id: doc.id, ...doc.data() }); });
-        historico.sort((a, b) => {
-            if (a.timestamp && b.timestamp) return b.timestamp - a.timestamp;
-            return 0;
-        });
-        atualizarHistorico(historico.slice(0, 50));
+        atualizarHistorico(historico);
     } catch (error) {
         console.error("Erro ao carregar histórico:", error);
     }
@@ -430,11 +571,17 @@ async function carregarComparacaoSemanal() {
         const semanaPassada = obterSemanaAnterior();
         const semanaAtualStr = obterSemanaAtual();
 
-        const snapshotAtual = await db.collection("ranking").where("uid", "==", usuarioAtual.uid).where("semana", "==", semanaAtualStr).get();
+        const snapshotAtual = await db.collection("ranking")
+            .where("uid", "==", usuarioAtual.uid)
+            .where("semana", "==", semanaAtualStr)
+            .get();
         let tempoAtual = 0;
         snapshotAtual.forEach(doc => { tempoAtual = doc.data().tempo || 0; });
 
-        const snapshotAnterior = await db.collection("ranking").where("uid", "==", usuarioAtual.uid).where("semana", "==", semanaPassada).get();
+        const snapshotAnterior = await db.collection("ranking")
+            .where("uid", "==", usuarioAtual.uid)
+            .where("semana", "==", semanaPassada)
+            .get();
         let tempoAnterior = 0;
         snapshotAnterior.forEach(doc => { tempoAnterior = doc.data().tempo || 0; });
 
@@ -472,50 +619,12 @@ async function carregarComparacaoSemanal() {
                         </div>
                     </div>
                     <div class="comparacao-resultado ${tempoAtual >= tempoAnterior ? 'positivo' : 'negativo'}">${comparacao}</div>
-                    <div class="comparacao-info">⏰ Reset automático todo domingo às 23:59</div>
+                    <div class="comparacao-info">⏰ Reset automático toda segunda-feira</div>
                 </div>
             `;
         }
     } catch (error) {
         console.error("Erro ao carregar comparação:", error);
-    }
-}
-
-// =====================================
-// RESET SEMANAL
-// =====================================
-
-function verificarResetSemanal() {
-    const agora = new Date();
-    const diaSemana = agora.getDay();
-    const hora = agora.getHours();
-    const minutos = agora.getMinutes();
-    if (diaSemana === 0 && hora === 23 && minutos === 59) {
-        resetarRankingSemanal();
-    }
-}
-
-async function resetarRankingSemanal() {
-    try {
-        const snapshot = await db.collection("ranking").where("semana", "==", semanaAtual).get();
-        const batch = db.batch();
-        const promessas = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            promessas.push(db.collection("historico_semanal").add({
-                uid: data.uid, nome: data.nome, tempo: data.tempo || 0,
-                semana: semanaAtual, dataSalvo: firebase.firestore.FieldValue.serverTimestamp()
-            }));
-            batch.update(doc.ref, { tempo: 0, semana: obterSemanaAtual(), ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp() });
-        });
-        await Promise.all(promessas);
-        await batch.commit();
-        await carregarRanking();
-        await carregarComparacaoSemanal();
-        alert(`📊 SEMANA FINALIZADA!\n\nVocê estudou ${formatarTempo(semanaAtualTotal)} esta semana!\nSemana passada: ${formatarTempo(semanaAnteriorTotal)}\n\nNovo ranking começou! Bora estudar! 💪`);
-        location.reload();
-    } catch (error) {
-        console.error("Erro ao resetar ranking:", error);
     }
 }
 
@@ -527,7 +636,10 @@ async function carregarTempoHoje() {
     if (!usuarioAtual) return;
     try {
         const hoje = new Date().toLocaleDateString("pt-BR");
-        const snapshot = await db.collection("historico").where("uid", "==", usuarioAtual.uid).where("data", "==", hoje).get();
+        const snapshot = await db.collection("historico")
+            .where("uid", "==", usuarioAtual.uid)
+            .where("data", "==", hoje)
+            .get();
         let total = 0;
         snapshot.forEach(doc => { total += doc.data().tempo || 0; });
         document.getElementById("tempoHoje").innerText = formatarTempo(total);
@@ -551,17 +663,23 @@ function atualizarInterface() {
 
 function obterSemanaAtual() {
     const data = new Date();
-    const primeiroDia = new Date(data.getFullYear(), 0, 1);
-    const dias = Math.floor((data - primeiroDia) / 86400000);
-    return data.getFullYear() + "-" + Math.ceil((dias + primeiroDia.getDay() + 1) / 7);
+    const alvo = new Date(Date.UTC(data.getFullYear(), data.getMonth(), data.getDate()));
+    const diaNum = alvo.getUTCDay() || 7; // domingo = 7
+    alvo.setUTCDate(alvo.getUTCDate() + 4 - diaNum); // quinta-feira da semana atual
+    const anoInicio = new Date(Date.UTC(alvo.getUTCFullYear(), 0, 1));
+    const semana = Math.ceil((((alvo - anoInicio) / 86400000) + 1) / 7);
+    return `${alvo.getUTCFullYear()}-${String(semana).padStart(2, '0')}`;
 }
 
 function obterSemanaAnterior() {
     const data = new Date();
     data.setDate(data.getDate() - 7);
-    const primeiroDia = new Date(data.getFullYear(), 0, 1);
-    const dias = Math.floor((data - primeiroDia) / 86400000);
-    return data.getFullYear() + "-" + Math.ceil((dias + primeiroDia.getDay() + 1) / 7);
+    const alvo = new Date(Date.UTC(data.getFullYear(), data.getMonth(), data.getDate()));
+    const diaNum = alvo.getUTCDay() || 7;
+    alvo.setUTCDate(alvo.getUTCDate() + 4 - diaNum);
+    const anoInicio = new Date(Date.UTC(alvo.getUTCFullYear(), 0, 1));
+    const semana = Math.ceil((((alvo - anoInicio) / 86400000) + 1) / 7);
+    return `${alvo.getUTCFullYear()}-${String(semana).padStart(2, '0')}`;
 }
 
 function escaparHTML(texto) {
@@ -571,14 +689,13 @@ function escaparHTML(texto) {
 }
 
 // =====================================
-// CADERNO DE ANOTAÇÕES - CORRIGIDO
+// CADERNO DE ANOTAÇÕES
 // =====================================
 
 let abasAtuais = [];
 let abaAtualId = null;
 let salvandoTimeout = null;
 
-// Carrega as abas do Firebase
 async function carregarAbas() {
     if (!usuarioAtual) {
         console.log("❌ Usuário não logado");
@@ -598,6 +715,8 @@ async function carregarAbas() {
             });
         });
 
+        console.log("📓 Abas carregadas:", abasAtuais.length);
+
         abasAtuais.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
 
         if (abasAtuais.length === 0) {
@@ -610,19 +729,19 @@ async function carregarAbas() {
         }
 
     } catch (error) {
-        console.error("Erro ao carregar abas:", error);
-        // Tenta criar uma aba padrão se falhar
+        console.error("❌ Erro ao carregar abas:", error);
         if (usuarioAtual) {
             await criarAbaPadrao();
         }
     }
 }
 
-// Cria aba padrão
 async function criarAbaPadrao() {
     if (!usuarioAtual) return;
     
     try {
+        console.log("📝 Criando aba padrão...");
+        
         const novaAba = {
             uid: usuarioAtual.uid,
             titulo: "Minhas anotações",
@@ -632,18 +751,23 @@ async function criarAbaPadrao() {
         };
 
         const docRef = await db.collection("caderno").add(novaAba);
+        console.log("✅ Aba padrão criada:", docRef.id);
+        
         abaAtualId = docRef.id;
         await carregarAbas();
 
     } catch (error) {
-        console.error("Erro ao criar aba padrão:", error);
+        console.error("❌ Erro ao criar aba padrão:", error);
+        alert("Erro ao criar aba padrão. Verifique as regras do Firebase.");
     }
 }
 
-// Renderiza as abas
 function renderizarAbas() {
     const lista = document.getElementById("listaAbas");
-    if (!lista) return;
+    if (!lista) {
+        console.log("❌ Elemento 'listaAbas' não encontrado");
+        return;
+    }
 
     lista.innerHTML = "";
 
@@ -665,11 +789,9 @@ function renderizarAbas() {
     });
 }
 
-// Seleciona uma aba
 function selecionarAba(id) {
     if (!id) return;
     
-    // Salva a aba atual antes de trocar
     if (abaAtualId && abaAtualId !== id) {
         salvarAnotacao();
     }
@@ -679,7 +801,6 @@ function selecionarAba(id) {
     carregarAba(id);
 }
 
-// Carrega o conteúdo de uma aba
 function carregarAba(id) {
     const aba = abasAtuais.find(a => a.id === id);
     if (!aba) {
@@ -694,7 +815,6 @@ function carregarAba(id) {
     document.getElementById("cadernoSalvo").className = "salvo";
 }
 
-// Salva a anotação atual
 async function salvarAnotacao() {
     if (!abaAtualId || !usuarioAtual) {
         console.log("❌ Não é possível salvar: sem aba ou usuário");
@@ -714,26 +834,30 @@ async function salvarAnotacao() {
             ultimaEdicao: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Atualiza a lista local
         const aba = abasAtuais.find(a => a.id === abaAtualId);
         if (aba) {
             aba.titulo = titulo;
             aba.conteudo = conteudo;
         }
 
+        console.log("✅ Anotação salva com sucesso!");
         document.getElementById("cadernoSalvo").innerText = "💾 Salvo!";
         document.getElementById("cadernoSalvo").className = "salvo";
         atualizarStats();
         renderizarAbas();
 
     } catch (error) {
-        console.error("Erro ao salvar:", error);
+        console.error("❌ Erro ao salvar:", error);
         document.getElementById("cadernoSalvo").innerText = "❌ Erro ao salvar";
         document.getElementById("cadernoSalvo").className = "";
+        
+        if (error.message.includes("not found")) {
+            alert("Documento não encontrado. Recriando...");
+            await criarNovaAba();
+        }
     }
 }
 
-// Atualiza estatísticas
 function atualizarStats() {
     const texto = document.getElementById("cadernoTexto").value;
     const palavras = texto.trim() ? texto.trim().split(/\s+/).length : 0;
@@ -741,7 +865,6 @@ function atualizarStats() {
     document.getElementById("cadernoStats").innerText = `📝 ${palavras} palavras · ${caracteres} caracteres`;
 }
 
-// Salva automaticamente com debounce
 function salvarAnotacaoDebounce() {
     if (salvandoTimeout) {
         clearTimeout(salvandoTimeout);
@@ -754,7 +877,6 @@ function salvarAnotacaoDebounce() {
     }, 800);
 }
 
-// Cria nova aba
 async function criarNovaAba() {
     if (!usuarioAtual) {
         alert("Faça login primeiro!");
@@ -770,7 +892,10 @@ async function criarNovaAba() {
     };
 
     try {
+        console.log("📝 Criando nova aba...");
         const docRef = await db.collection("caderno").add(novaAba);
+        console.log("✅ Nova aba criada:", docRef.id);
+        
         novaAba.id = docRef.id;
         abasAtuais.push(novaAba);
         
@@ -778,7 +903,6 @@ async function criarNovaAba() {
         renderizarAbas();
         carregarAba(docRef.id);
         
-        // Foca no título para renomear
         setTimeout(() => {
             const tituloInput = document.getElementById("cadernoTitulo");
             tituloInput.focus();
@@ -786,12 +910,11 @@ async function criarNovaAba() {
         }, 200);
 
     } catch (error) {
-        console.error("Erro ao criar nova aba:", error);
-        alert("Erro ao criar nova aba. Tente novamente.");
+        console.error("❌ Erro ao criar nova aba:", error);
+        alert("Erro ao criar nova aba. Verifique as regras do Firebase.");
     }
 }
 
-// Renomeia a aba
 async function renomearAba(novoTitulo) {
     if (!abaAtualId || !usuarioAtual) return;
 
@@ -807,11 +930,10 @@ async function renomearAba(novoTitulo) {
         renderizarAbas();
 
     } catch (error) {
-        console.error("Erro ao renomear:", error);
+        console.error("❌ Erro ao renomear:", error);
     }
 }
 
-// Exclui a aba
 async function excluirAba() {
     if (!abaAtualId || !usuarioAtual) return;
     if (abasAtuais.length <= 1) {
@@ -824,6 +946,7 @@ async function excluirAba() {
 
     try {
         await db.collection("caderno").doc(abaAtualId).delete();
+        console.log("✅ Aba excluída:", abaAtualId);
         
         const index = abasAtuais.findIndex(a => a.id === abaAtualId);
         if (index !== -1) {
@@ -835,23 +958,15 @@ async function excluirAba() {
         carregarAba(abaAtualId);
 
     } catch (error) {
-        console.error("Erro ao excluir:", error);
+        console.error("❌ Erro ao excluir:", error);
         alert("Erro ao excluir aba. Tente novamente.");
     }
 }
 
 // =====================================
-// RECARREGAR DADOS
+// EVENTO DE DIGITAÇÃO NO CADERNO
 // =====================================
 
-setInterval(() => {
-    if (usuarioAtual) {
-        carregarRanking();
-        carregarComparacaoSemanal();
-    }
-}, 30000);
-
-// Evento para salvar automaticamente ao digitar no caderno
 document.addEventListener("DOMContentLoaded", () => {
     const textoElement = document.getElementById("cadernoTexto");
     if (textoElement) {
@@ -864,5 +979,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 console.log("✅ MyStudy inicializado!");
 console.log("📊 Ranking semanal ativo!");
-console.log("⏰ Reset automático: DOMINGO 23:59");
+console.log("⏰ Reset automático toda segunda-feira");
 console.log("📓 Caderno de anotações ativo!");
