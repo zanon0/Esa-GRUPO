@@ -163,11 +163,16 @@ function fecharMenu() {
     document.getElementById("menuOverlay").classList.add("hidden");
 }
 
+// =====================================
+// TROCAR PÁGINA (COM CADERNO)
+// =====================================
+
 function mostrarPagina(pagina) {
     fecharMenu();
     document.getElementById("paginaCronometro").classList.add("hidden");
     document.getElementById("paginaRanking").classList.add("hidden");
     document.getElementById("paginaHistorico").classList.add("hidden");
+    document.getElementById("paginaCaderno").classList.add("hidden");
 
     if (pagina === "cronometro") {
         document.getElementById("paginaCronometro").classList.remove("hidden");
@@ -178,6 +183,9 @@ function mostrarPagina(pagina) {
     } else if (pagina === "historico") {
         document.getElementById("paginaHistorico").classList.remove("hidden");
         carregarHistorico();
+    } else if (pagina === "caderno") {
+        document.getElementById("paginaCaderno").classList.remove("hidden");
+        carregarAbas();
     }
 }
 
@@ -562,13 +570,6 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-setInterval(() => {
-    if (usuarioAtual) {
-        carregarRanking();
-        carregarComparacaoSemanal();
-    }
-}, 30000);
-
 // =====================================
 // CADERNO DE ANOTAÇÕES
 // =====================================
@@ -594,15 +595,12 @@ async function carregarAbas() {
             });
         });
 
-        // Ordena por ordem
         abasAtuais.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
 
         if (abasAtuais.length === 0) {
-            // Cria aba padrão
             await criarAbaPadrao();
         } else {
             renderizarAbas();
-            // Abre a primeira aba
             const primeiraAba = abasAtuais[0];
             abaAtualId = primeiraAba.id;
             carregarAba(primeiraAba.id);
@@ -610,7 +608,6 @@ async function carregarAbas() {
 
     } catch (error) {
         console.error("Erro ao carregar abas:", error);
-        // Fallback: cria aba padrão
         criarAbaPadrao();
     }
 }
@@ -635,7 +632,7 @@ async function criarAbaPadrao() {
     }
 }
 
-// Renderiza as abas na tela
+// Renderiza as abas
 function renderizarAbas() {
     const lista = document.getElementById("listaAbas");
     if (!lista) return;
@@ -659,7 +656,6 @@ function selecionarAba(id) {
     if (salvandoTimeout) {
         clearTimeout(salvandoTimeout);
     }
-    // Salva a aba atual antes de trocar
     if (abaAtualId) {
         salvarAnotacao();
     }
@@ -698,7 +694,6 @@ async function salvarAnotacao() {
             ultimaEdicao: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Atualiza a lista local
         const aba = abasAtuais.find(a => a.id === abaAtualId);
         if (aba) {
             aba.titulo = titulo;
@@ -717,7 +712,7 @@ async function salvarAnotacao() {
     }
 }
 
-// Atualiza estatísticas (palavras)
+// Atualiza estatísticas
 function atualizarStats() {
     const texto = document.getElementById("cadernoTexto").value;
     const palavras = texto.trim() ? texto.trim().split(/\s+/).length : 0;
@@ -738,7 +733,7 @@ function salvarAnotacaoDebounce() {
     }, 1000);
 }
 
-// Cria uma nova aba
+// Cria nova aba
 async function criarNovaAba() {
     if (!usuarioAtual) return;
 
@@ -755,7 +750,6 @@ async function criarNovaAba() {
         novaAba.id = docRef.id;
         abasAtuais.push(novaAba);
         
-        // Seleciona a nova aba
         abaAtualId = docRef.id;
         renderizarAbas();
         carregarAba(docRef.id);
@@ -767,7 +761,7 @@ async function criarNovaAba() {
     }
 }
 
-// Renomeia a aba atual
+// Renomeia a aba
 async function renomearAba(novoTitulo) {
     if (!abaAtualId || !usuarioAtual) return;
 
@@ -787,7 +781,7 @@ async function renomearAba(novoTitulo) {
     }
 }
 
-// Exclui a aba atual
+// Exclui a aba
 async function excluirAba() {
     if (!abaAtualId || !usuarioAtual) return;
     if (abasAtuais.length <= 1) {
@@ -800,13 +794,11 @@ async function excluirAba() {
     try {
         await db.collection("caderno").doc(abaAtualId).delete();
         
-        // Remove da lista local
         const index = abasAtuais.findIndex(a => a.id === abaAtualId);
         if (index !== -1) {
             abasAtuais.splice(index, 1);
         }
 
-        // Seleciona a primeira aba
         abaAtualId = abasAtuais[0].id;
         renderizarAbas();
         carregarAba(abaAtualId);
@@ -816,30 +808,18 @@ async function excluirAba() {
     }
 }
 
-// Modifica a função mostrarPagina para incluir o caderno
-function mostrarPagina(pagina) {
-    fecharMenu();
-    document.getElementById("paginaCronometro").classList.add("hidden");
-    document.getElementById("paginaRanking").classList.add("hidden");
-    document.getElementById("paginaHistorico").classList.add("hidden");
-    document.getElementById("paginaCaderno").classList.add("hidden");
+// =====================================
+// RECARREGAR DADOS
+// =====================================
 
-    if (pagina === "cronometro") {
-        document.getElementById("paginaCronometro").classList.remove("hidden");
-        carregarComparacaoSemanal();
-    } else if (pagina === "ranking") {
-        document.getElementById("paginaRanking").classList.remove("hidden");
+setInterval(() => {
+    if (usuarioAtual) {
         carregarRanking();
-    } else if (pagina === "historico") {
-        document.getElementById("paginaHistorico").classList.remove("hidden");
-        carregarHistorico();
-    } else if (pagina === "caderno") {
-        document.getElementById("paginaCaderno").classList.remove("hidden");
-        carregarAbas();
+        carregarComparacaoSemanal();
     }
-}
+}, 30000);
 
-// Adiciona evento para salvar automaticamente ao digitar
+// Evento para salvar automaticamente ao digitar no caderno
 document.addEventListener("DOMContentLoaded", () => {
     const textoElement = document.getElementById("cadernoTexto");
     if (textoElement) {
@@ -853,3 +833,4 @@ document.addEventListener("DOMContentLoaded", () => {
 console.log("✅ MyStudy inicializado!");
 console.log("📊 Ranking semanal ativo!");
 console.log("⏰ Reset automático: DOMINGO 23:59");
+console.log("📓 Caderno de anotações ativo!");
