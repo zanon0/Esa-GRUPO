@@ -199,6 +199,7 @@ function mostrarPagina(pagina) {
 
     if (pagina === "cronometro") {
         document.getElementById("paginaCronometro").classList.remove("hidden");
+        carregarComparacaoSemanal();
     } else if (pagina === "ranking") {
         document.getElementById("paginaRanking").classList.remove("hidden");
         carregarRanking();
@@ -491,12 +492,12 @@ async function carregarComparacaoSemanal() {
 
     try {
         const semanaPassada = obterSemanaAnterior();
-        const semanaAtual = obterSemanaAtual();
+        const semanaAtualStr = obterSemanaAtual();
 
         // Busca tempo da semana atual
         const snapshotAtual = await db.collection("ranking")
             .where("uid", "==", usuarioAtual.uid)
-            .where("semana", "==", semanaAtual)
+            .where("semana", "==", semanaAtualStr)
             .get();
 
         let tempoAtual = 0;
@@ -519,7 +520,6 @@ async function carregarComparacaoSemanal() {
         semanaAnteriorTotal = tempoAnterior;
 
         // Calcula diferença percentual
-        let percentual = 0;
         let comparacao = "";
 
         if (tempoAnterior === 0 && tempoAtual === 0) {
@@ -528,11 +528,11 @@ async function carregarComparacaoSemanal() {
             comparacao = "🚀 Primeira semana! Continue assim!";
         } else if (tempoAtual > tempoAnterior) {
             const aumento = ((tempoAtual - tempoAnterior) / tempoAnterior) * 100;
-            percentual = Math.round(aumento);
+            const percentual = Math.round(aumento);
             comparacao = `📈 ${percentual}% a mais que semana passada! 🎉`;
         } else if (tempoAtual < tempoAnterior) {
             const queda = ((tempoAnterior - tempoAtual) / tempoAnterior) * 100;
-            percentual = Math.round(queda);
+            const percentual = Math.round(queda);
             comparacao = `📉 ${percentual}% a menos que semana passada. Bora recuperar! 💪`;
         } else {
             comparacao = "⚖️ Mesmo tempo da semana passada!";
@@ -560,20 +560,12 @@ async function carregarComparacaoSemanal() {
                     <div style="text-align:center; margin-top:15px; padding-top:15px; border-top:1px solid #292929; color:${tempoAtual >= tempoAnterior ? '#7ee787' : '#ff7676'};">
                         ${comparacao}
                     </div>
-                    <div style="text-align:center; margin-top:10px; font-size:13px; color:#555;">
+                    <div style="text-align:center; margin-top:10px; font-size:12px; color:#555;">
                         ⏰ Reset automático todo domingo às 23:59
                     </div>
                 </div>
             `;
         }
-
-        // Salva no localStorage para mostrar no ranking
-        localStorage.setItem('ultimaComparacao', JSON.stringify({
-            semanaAtual: tempoAtual,
-            semanaAnterior: tempoAnterior,
-            comparacao: comparacao,
-            data: new Date().toISOString()
-        }));
 
     } catch (error) {
         console.error("Erro ao carregar comparação:", error);
@@ -586,11 +578,10 @@ async function carregarComparacaoSemanal() {
 
 function verificarResetSemanal() {
     const agora = new Date();
-    const diaSemana = agora.getDay(); // 0 = Domingo, 6 = Sábado
+    const diaSemana = agora.getDay();
     const hora = agora.getHours();
     const minutos = agora.getMinutes();
 
-    // Se for Domingo às 23:59
     if (diaSemana === 0 && hora === 23 && minutos === 59) {
         console.log("🔄 RESET SEMANAL INICIADO!");
         resetarRankingSemanal();
@@ -603,19 +594,16 @@ function verificarResetSemanal() {
 
 async function resetarRankingSemanal() {
     try {
-        // Busca todos os rankings da semana atual
         const snapshot = await db.collection("ranking")
             .where("semana", "==", semanaAtual)
             .get();
 
-        // Salva o tempo de cada um como histórico semanal
         const batch = db.batch();
         const promessas = [];
 
         snapshot.forEach(doc => {
             const data = doc.data();
             
-            // Salva no histórico semanal
             promessas.push(
                 db.collection("historico_semanal").add({
                     uid: data.uid,
@@ -626,7 +614,6 @@ async function resetarRankingSemanal() {
                 })
             );
 
-            // Reseta o ranking para 0
             batch.update(doc.ref, {
                 tempo: 0,
                 semana: obterSemanaAtual(),
@@ -634,23 +621,19 @@ async function resetarRankingSemanal() {
             });
         });
 
-        // Executa tudo
         await Promise.all(promessas);
         await batch.commit();
 
         console.log("✅ Ranking resetado com sucesso!");
         
-        // Atualiza a interface
         await carregarRanking();
         await carregarComparacaoSemanal();
 
-        // Mostra notificação
         alert("📊 SEMANA FINALIZADA!\n\n" +
               `Você estudou ${formatarTempo(semanaAtualTotal)} esta semana!\n` +
               `Semana passada: ${formatarTempo(semanaAnteriorTotal)}\n\n` +
               "Novo ranking começou! Bora estudar! 💪");
 
-        // Recarrega a página para atualizar tudo
         location.reload();
 
     } catch (error) {
